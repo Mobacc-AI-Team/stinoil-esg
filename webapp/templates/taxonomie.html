@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Taxonomie · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Taxonomie</div>
+      <h2>Categorieën en gekoppelde documenten</h2>
+      <p>Gebruik dit overzicht om te zien welke wetgeving, casussen en antwoorden onder dezelfde categorie vallen.</p>
+    </div>
+  </div>
+
+  <div class="taxonomy-grid">
+    {% for node in taxonomy %}
+    <article class="taxonomy-card">
+      <div class="card-head">
+        <h3>{{ node.name }}</h3>
+        <span class="pill">{{ node.count }}</span>
+      </div>
+      <ul class="document-list compact-list">
+        {% for doc in node.documents %}
+        <li>
+          <div>
+            <a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a>
+            <div class="case-meta">{{ doc.section_label }}</div>
+          </div>
+          <span>{{ doc.metadata.get('datum', '') }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </article>
+    {% else %}
+    <p>Er zijn nog geen categorieën beschikbaar.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

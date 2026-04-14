@@ -208,6 +208,12 @@ def create_app() -> Flask:
             available_statuses=sorted(unique_values(load_documents(kb_root), "status")),
         )
 
+    @app.route("/taxonomie")
+    def taxonomie() -> str:
+        documents = load_documents(kb_root)
+        tree = build_taxonomy_tree(documents)
+        return render_template("taxonomie.html", taxonomy=tree)
+
     @app.route("/zoek")
     def zoek() -> str:
         filters = SearchFilters(
@@ -327,6 +333,25 @@ def top_tags(documents: Iterable[DocumentRecord]) -> list[tuple[str, int]]:
         for tag in doc.tags:
             tag_counts[tag] = tag_counts.get(tag, 0) + 1
     return sorted(tag_counts.items(), key=lambda item: (-item[1], item[0]))[:12]
+
+
+def build_taxonomy_tree(documents: Iterable[DocumentRecord]) -> list[dict[str, object]]:
+    category_map: dict[str, list[DocumentRecord]] = defaultdict(list)
+    for doc in documents:
+        for category in doc.categories:
+            category_map[category].append(doc)
+
+    taxonomy: list[dict[str, object]] = []
+    for category in sorted(category_map):
+        docs = sorted(category_map[category], key=lambda item: (item.section_label, item.title.casefold()))
+        taxonomy.append(
+            {
+                "name": category,
+                "count": len(docs),
+                "documents": docs,
+            }
+        )
+    return taxonomy
 
 
 def unique_values(documents: Iterable[DocumentRecord], field: str) -> set[str]:
