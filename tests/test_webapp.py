@@ -65,6 +65,7 @@ class FlaskInterfaceTests(unittest.TestCase):
         self.assertIn("@app.route(\"/wetgeving/upload\", methods=[\"GET\", \"POST\"])", source)
         self.assertIn("def derive_categories_from_text", source)
         self.assertIn("@app.route(\"/taxonomie\")", source)
+        self.assertIn("from collections import defaultdict", source)
 
     @unittest.skipUnless(FLASK_AVAILABLE, "Flask is niet lokaal geïnstalleerd")
     def test_dashboard_and_detail_pages_render(self) -> None:
