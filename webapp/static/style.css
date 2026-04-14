@@ -139,6 +139,20 @@ a:hover { text-decoration: underline; }
   padding: 14px;
   font: inherit;
 }
+.related-list {
+  display: grid;
+  gap: 12px;
+}
+.related-card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+}
+.related-card p {
+  margin: 8px 0;
+  color: var(--muted);
+}
 .compact-list li {
   align-items: start;
 }

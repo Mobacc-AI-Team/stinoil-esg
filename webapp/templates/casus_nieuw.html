@@ -116,6 +116,24 @@
       </ul>
     </div>
     <div>
+      <strong>Vergelijkbare dossiers</strong>
+      <div class="related-list">
+        {% for item in preview.related_documents %}
+        <article class="related-card">
+          <div class="case-meta">{{ item.section_label }} · score {{ item.score }}</div>
+          <a href="{{ url_for('document_detail', rel_path=item.rel_path) }}"><strong>{{ item.title }}</strong></a>
+          <p>{{ item.summary or 'Geen samenvatting beschikbaar.' }}</p>
+          <div class="pill-row">
+            {% for category in item.categories[:2] %}<span class="pill subtle">{{ category }}</span>{% endfor %}
+            {% for tag in item.tags[:2] %}<span class="pill subtle">{{ tag }}</span>{% endfor %}
+          </div>
+        </article>
+        {% else %}
+        <p class="muted">Nog geen vergelijkbare dossiers gevonden.</p>
+        {% endfor %}
+      </div>
+    </div>
+    <div>
       <strong>Geanalyseerde intake</strong>
       <textarea class="preview-textarea" name="preview_intake_text" rows="12">{{ preview.intake_text }}</textarea>
     </div>

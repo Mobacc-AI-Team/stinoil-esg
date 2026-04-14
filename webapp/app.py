@@ -9,6 +9,7 @@ from functools import lru_cache
 from html import escape
 from pathlib import Path
 from typing import Iterable
+from collections import Counter
 
 from flask import Flask, abort, redirect, render_template, request, url_for
 
@@ -118,6 +119,7 @@ class IntakePreview:
     intake_text: str
     attachment_name: str
     attachment_present: bool
+    related_documents: list[dict[str, object]]
 
 
 def create_app() -> Flask:
@@ -246,7 +248,7 @@ def create_app() -> Flask:
                 }
 
                 if action == "preview":
-                    preview = build_case_preview(**form_payload)
+                    preview = build_case_preview(kb_root=kb_root, **form_payload)
                     return render_template("casus_nieuw.html", preview=preview, form_values=form_payload)
 
                 form_payload["titel"] = request.form.get("preview_titel", form_payload["titel"]).strip()
@@ -543,6 +545,7 @@ def create_case_from_form(
 ) -> tuple[Path, Path, Path]:
     ensure_case_directories(kb_root)
     preview = build_case_preview(
+        kb_root=kb_root,
         afzender_type=afzender_type,
         organisatie=organisatie,
         locatie=locatie,
@@ -638,6 +641,7 @@ def create_case_from_form(
 
 
 def build_case_preview(
+    kb_root: Path,
     afzender_type: str,
     organisatie: str,
     locatie: str,
@@ -686,7 +690,67 @@ def build_case_preview(
         intake_text=intake_text,
         attachment_name=upload_name,
         attachment_present=bool(upload_name and upload_content),
+        related_documents=find_related_documents(kb_root, resolved_title, intake_text, tag_list, category_list),
     )
+
+
+def find_related_documents(
+    kb_root: Path,
+    title: str,
+    intake_text: str,
+    tags: list[str],
+    categories: list[str],
+    limit: int = 6,
+) -> list[dict[str, object]]:
+    documents = load_documents(kb_root)
+    tokens = tokenize_similarity_text(f"{title} {intake_text} {' '.join(tags)} {' '.join(categories)}")
+    results: list[dict[str, object]] = []
+    for doc in documents:
+        if doc.section_key not in {"vragen", "beoordelingen", "antwoorden", "wetgeving"}:
+            continue
+        doc_tokens = tokenize_similarity_text(
+            f"{doc.title} {doc.body} {' '.join(doc.tags)} {' '.join(doc.categories)}"
+        )
+        score = similarity_score(tokens, doc_tokens, tags, doc.tags, categories, doc.categories)
+        if score <= 0:
+            continue
+        results.append(
+            {
+                "title": doc.title,
+                "rel_path": doc.rel_path,
+                "section_label": doc.section_label,
+                "score": score,
+                "tags": doc.tags,
+                "categories": doc.categories,
+                "summary": doc.metadata.get("samenvatting", ""),
+            }
+        )
+
+    results.sort(key=lambda item: (-float(item["score"]), str(item["title"]).casefold()))
+    return results[:limit]
+
+
+def tokenize_similarity_text(text: str) -> set[str]:
+    words = re.findall(r"[a-zA-Z0-9_]{3,}", text.lower())
+    stopwords = {
+        "de", "het", "een", "voor", "van", "met", "over", "aan", "bij", "die", "dit",
+        "wordt", "zijn", "naar", "nog", "ook", "als", "dan", "door", "from", "that",
+    }
+    return {word for word in words if word not in stopwords}
+
+
+def similarity_score(
+    input_tokens: set[str],
+    doc_tokens: set[str],
+    input_tags: list[str],
+    doc_tags: list[str],
+    input_categories: list[str],
+    doc_categories: list[str],
+) -> float:
+    overlap = len(input_tokens & doc_tokens)
+    tag_overlap = len(set(input_tags) & set(doc_tags))
+    category_overlap = len(set(input_categories) & set(doc_categories))
+    return overlap + (tag_overlap * 4) + (category_overlap * 5)
 
 
 def write_temp_upload(upload_name: str, upload_content: bytes) -> Path:
