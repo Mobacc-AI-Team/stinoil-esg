@@ -97,6 +97,15 @@ a:hover { text-decoration: underline; }
   padding: 18px;
   background: var(--surface-soft);
 }
+.subtle-card {
+  background: #f7f8f9;
+  border: 1px dashed var(--line);
+  box-shadow: none;
+}
+.intake-note p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
 .compact-list li {
   align-items: start;
 }

@@ -10,7 +10,7 @@
     </div>
   </div>
 
-  <form method="post" class="upload-grid">
+  <form method="post" enctype="multipart/form-data" class="upload-grid">
     <label>
       <span>Type afzender</span>
       <select name="afzender_type" required>
@@ -29,7 +29,7 @@
     </label>
     <label>
       <span>Titel</span>
-      <input type="text" name="titel" placeholder="Korte titel van de vraag" required>
+      <input type="text" name="titel" placeholder="Korte titel van de vraag, leeg laten mag ook voor automatische voorstelregel">
     </label>
     <label>
       <span>Tags</span>
@@ -43,12 +43,20 @@
       <span>Bron</span>
       <input type="text" name="bron" placeholder="Bijvoorbeeld: e-mail, telefoonnotitie, Teams">
     </label>
+    <label>
+      <span>Bestand uploaden</span>
+      <input type="file" name="bestand" accept=".pdf,.docx,.txt,.md">
+    </label>
     <label class="full-width">
-      <span>Vraagtekst</span>
-      <textarea name="vraag" rows="10" placeholder="Volledige klant- of leveranciersvraag" required></textarea>
+      <span>Vraagtekst / geplakte e-mail</span>
+      <textarea name="vraag" rows="12" placeholder="Plak hier de volledige klant- of leveranciersvraag, of laat leeg als je alleen een document uploadt."></textarea>
+    </label>
+    <div class="full-width intake-note card subtle-card">
+      <strong>Werking</strong>
+      <p>Je kunt tekst plakken, een document uploaden of beide combineren. Het systeem maakt daarna automatisch een vraag, beoordeling en conceptantwoord aan en stelt categorieën en relevante wetgeving voor.</p>
     </label>
     <div class="form-actions">
-      <button type="submit">Opslaan en archiveren</button>
+      <button type="submit">Opslaan en analyseren</button>
     </div>
   </form>
 </section>

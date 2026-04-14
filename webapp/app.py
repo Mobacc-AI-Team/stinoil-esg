@@ -215,6 +215,7 @@ def create_app() -> Flask:
         ensure_case_directories(kb_root)
         if request.method == "POST":
             try:
+                upload = request.files.get("bestand")
                 create_case_from_form(
                     kb_root=kb_root,
                     afzender_type=request.form.get("afzender_type", "").strip(),
@@ -225,6 +226,8 @@ def create_app() -> Flask:
                     tags=request.form.get("tags", "").strip(),
                     categories=request.form.get("categorieen", "").strip(),
                     bron=request.form.get("bron", "").strip(),
+                    upload_name=upload.filename if upload and upload.filename else "",
+                    upload_content=upload.read() if upload and upload.filename else b"",
                 )
             except ValueError:
                 return redirect(url_for("casussen", status="ongeldige_invoer"))
@@ -505,12 +508,26 @@ def create_case_from_form(
     tags: str,
     categories: str,
     bron: str,
+    upload_name: str,
+    upload_content: bytes,
 ) -> tuple[Path, Path, Path]:
     ensure_case_directories(kb_root)
     normalized_type = slugify(afzender_type) if afzender_type else "extern"
     if normalized_type not in {"klant", "leverancier", "extern"}:
         raise ValueError("Ongeldig afzendertype")
-    if not titel or not vraag:
+    extracted_upload_text = ""
+    attachment_rel = ""
+    if upload_name and upload_content:
+        attachment_path = save_case_attachment(kb_root, upload_name, upload_content, organisatie or titel)
+        attachment_rel = relative_path(kb_root, attachment_path)
+        extracted_upload_text = extract_text_from_file(attachment_path)
+
+    intake_text = question_intake_text(vraag, extracted_upload_text)
+
+    if not titel:
+        titel = infer_case_title(intake_text, organisatie, normalized_type)
+
+    if not titel or not intake_text:
         raise ValueError("Titel en vraag zijn verplicht")
 
     now = datetime.now(timezone.utc)
@@ -533,13 +550,14 @@ def create_case_from_form(
 
     tag_list = parse_tags(tags)
     if not tag_list:
-        tag_list = derive_tags_from_text(f"{titel} {vraag}")
+        tag_list = derive_tags_from_text(f"{titel} {intake_text}")
 
     category_list = parse_tags(categories)
     if not category_list:
-        category_list = derive_categories_from_text(f"{titel} {vraag}")
+        category_list = derive_categories_from_text(f"{titel} {intake_text}")
 
-    summary = summarize_extracted_text(vraag, titel, max_len=220)
+    summary = summarize_extracted_text(intake_text, titel, max_len=220)
+    suggested_regulations = suggest_relevant_regulations(tag_list, category_list, intake_text)
     vraag_rel = relative_path(kb_root, vraag_path)
     beoordeling_rel = relative_path(kb_root, beoordeling_path)
     antwoord_rel = relative_path(kb_root, antwoord_path)
@@ -551,10 +569,11 @@ def create_case_from_form(
             afzender_type=normalized_type,
             organisatie=organisatie or "onbekend",
             locatie=locatie or "centrale_beoordeling",
-            vraag=vraag,
+            vraag=intake_text,
             tags=tag_list,
             categories=category_list,
             bron=bron or "webformulier",
+            attachment_rel=attachment_rel,
             beoordeling_rel=beoordeling_rel,
             antwoord_rel=antwoord_rel,
             summary=summary,
@@ -571,7 +590,8 @@ def create_case_from_form(
             tags=tag_list,
             categories=category_list,
             summary=summary,
-            vraag=vraag,
+            vraag=intake_text,
+            suggested_regulations=suggested_regulations,
         ),
         encoding="utf-8",
     )
@@ -586,6 +606,7 @@ def create_case_from_form(
             tags=tag_list,
             categories=category_list,
             summary=summary,
+            suggested_regulations=suggested_regulations,
         ),
         encoding="utf-8",
     )
@@ -594,8 +615,54 @@ def create_case_from_form(
 
 
 def ensure_case_directories(kb_root: Path) -> None:
-    for rel in ["02_Vragen", "03_Beoordelingen", "04_Antwoorden"]:
+    for rel in ["02_Vragen", "03_Beoordelingen", "04_Antwoorden", "05_Bronnen/emails", "05_Bronnen/pdf", "05_Bronnen/interne_documenten"]:
         (kb_root / rel).mkdir(parents=True, exist_ok=True)
+
+
+def save_case_attachment(kb_root: Path, upload_name: str, upload_content: bytes, seed: str) -> Path:
+    suffix = Path(upload_name).suffix.lower()
+    if suffix not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise ValueError("Unsupported file type")
+    folder = SOURCE_FOLDER_MAP.get(suffix, "interne_documenten")
+    base_slug = slugify(seed or Path(upload_name).stem or "bijlage")
+    target_dir = kb_root / "05_Bronnen" / folder
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_path = unique_path(target_dir / f"{base_slug}{suffix}")
+    target_path.write_bytes(upload_content)
+    return target_path
+
+
+def question_intake_text(manual_text: str, extracted_upload_text: str) -> str:
+    parts = [part.strip() for part in [manual_text, extracted_upload_text] if part and part.strip()]
+    return "\n\n".join(parts)
+
+
+def infer_case_title(intake_text: str, organisatie: str, afzender_type: str) -> str:
+    base = summarize_extracted_text(intake_text, "Nieuwe vraag", max_len=90)
+    prefix = organisatie or afzender_type or "casus"
+    title = f"{prefix} - {base}".strip(" -")
+    return title[:120].strip()
+
+
+def suggest_relevant_regulations(tags: list[str], categories: list[str], intake_text: str) -> list[str]:
+    text = f"{' '.join(tags)} {' '.join(categories)} {intake_text}".lower()
+    suggestions: list[str] = []
+    rules = {
+        "REACH-verordening": ["reach", "svhc", "sds"],
+        "CLP-verordening": ["clp", "etikettering", "classificatie"],
+        "ADR": ["adr", "transport", "un-nummer"],
+        "PGS 15": ["pgs", "opslag"],
+        "Brzo / Seveso": ["brzo", "seveso", "zware ongevallen"],
+        "Arbeidsomstandighedenbesluit": ["arbeidsomstandighedenbesluit", "arbobesluit"],
+        "Arbeidsomstandighedenregeling": ["arbeidsomstandighedenregeling", "arboregeling"],
+        "ATEX": ["atex", "explosieve atmosfeer"],
+        "QRA": ["qra", "risicoanalyse"],
+        "Vergunningen / Omgevingswet": ["vergunning", "omgevingsvergunning", "bal"],
+    }
+    for name, markers in rules.items():
+        if any(marker in text for marker in markers):
+            suggestions.append(name)
+    return suggestions or ["Nog handmatig te koppelen aan relevante wetgeving"]
 
 
 def unique_case_paths(
@@ -627,10 +694,12 @@ def render_case_question_markdown(
     tags: list[str],
     categories: list[str],
     bron: str,
+    attachment_rel: str,
     beoordeling_rel: str,
     antwoord_rel: str,
     summary: str,
 ) -> str:
+    attachment_block = f"- Bijlage: `{attachment_rel}`" if attachment_rel else "- Geen bijlage opgeslagen"
     return f"""---
 titel: {yaml_escape(titel)}
 datum: {datum}
@@ -656,9 +725,13 @@ samenvatting: {yaml_escape(summary)}
 - Organisatie: {organisatie}
 - Locatie: {locatie}
 - Invoerbron: {bron}
+- Bijlagen: zie bronnen
 
 ## Vraagstelling
 {vraag}
+
+## Bijlagen / bronverwijzingen
+{attachment_block}
 """.strip() + "\n"
 
 
@@ -671,8 +744,10 @@ def render_case_assessment_markdown(
     categories: list[str],
     summary: str,
     vraag: str,
+    suggested_regulations: list[str],
 ) -> str:
     category_block = "\n".join(f"- {item}" for item in categories) if categories else "- Nog te bepalen"
+    regulation_block = "\n".join(f"- {item}" for item in suggested_regulations) if suggested_regulations else "- Nog aan te vullen"
     return f"""---
 titel: {yaml_escape(titel)}
 datum: {datum}
@@ -700,7 +775,7 @@ samenvatting: {yaml_escape(summary)}
 {vraag}
 
 ## Relevante wetgeving / normen / kaders
-- Nog aan te vullen
+{regulation_block}
 
 ## Analyse
 - Nog aan te vullen
@@ -719,7 +794,9 @@ def render_case_answer_markdown(
     tags: list[str],
     categories: list[str],
     summary: str,
+    suggested_regulations: list[str],
 ) -> str:
+    regulation_block = "\n".join(f"- {item}" for item in suggested_regulations) if suggested_regulations else "- Nog aan te vullen"
     return f"""---
 titel: {yaml_escape(titel)}
 datum: {datum}
@@ -743,6 +820,9 @@ Nog op te stellen.
 ## Onderbouwing
 - Toets aan beoordeling: `{beoordeling_rel}`
 - Controle op locatiespecifieke afwijkingen: nog uitvoeren
+
+## Eerste relevante kaders
+{regulation_block}
 """.strip() + "\n"
 
 
