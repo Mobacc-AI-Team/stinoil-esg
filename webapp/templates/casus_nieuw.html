@@ -14,34 +14,34 @@
     <label>
       <span>Type afzender</span>
       <select name="afzender_type" required>
-        <option value="klant">Klant</option>
-        <option value="leverancier">Leverancier</option>
-        <option value="extern">Extern</option>
+        <option value="klant" {% if form_values.get('afzender_type') == 'klant' %}selected{% endif %}>Klant</option>
+        <option value="leverancier" {% if form_values.get('afzender_type') == 'leverancier' %}selected{% endif %}>Leverancier</option>
+        <option value="extern" {% if form_values.get('afzender_type') == 'extern' %}selected{% endif %}>Extern</option>
       </select>
     </label>
     <label>
       <span>Organisatie</span>
-      <input type="text" name="organisatie" placeholder="Bijvoorbeeld: leverancier X of klant Y">
+      <input type="text" name="organisatie" value="{{ form_values.get('organisatie', '') }}" placeholder="Bijvoorbeeld: leverancier X of klant Y">
     </label>
     <label>
       <span>Locatie</span>
-      <input type="text" name="locatie" placeholder="Bijvoorbeeld: centrale_beoordeling of locatie Moerdijk">
+      <input type="text" name="locatie" value="{{ form_values.get('locatie', '') }}" placeholder="Bijvoorbeeld: centrale_beoordeling of locatie Moerdijk">
     </label>
     <label>
       <span>Titel</span>
-      <input type="text" name="titel" placeholder="Korte titel van de vraag, leeg laten mag ook voor automatische voorstelregel">
+      <input type="text" name="titel" value="{{ form_values.get('titel', '') }}" placeholder="Korte titel van de vraag, leeg laten mag ook voor automatische voorstelregel">
     </label>
     <label>
       <span>Tags</span>
-      <input type="text" name="tags" placeholder="Bijvoorbeeld: clp, sds, transport">
+      <input type="text" name="tags" value="{{ form_values.get('tags', '') }}" placeholder="Bijvoorbeeld: clp, sds, transport">
     </label>
     <label>
       <span>Categorieën</span>
-      <input type="text" name="categorieen" placeholder="Bijvoorbeeld: brzo, atex, vergunningen">
+      <input type="text" name="categorieen" value="{{ form_values.get('categories', '') }}" placeholder="Bijvoorbeeld: brzo, atex, vergunningen">
     </label>
     <label>
       <span>Bron</span>
-      <input type="text" name="bron" placeholder="Bijvoorbeeld: e-mail, telefoonnotitie, Teams">
+      <input type="text" name="bron" value="{{ form_values.get('bron', '') }}" placeholder="Bijvoorbeeld: e-mail, telefoonnotitie, Teams">
     </label>
     <label>
       <span>Bestand uploaden</span>
@@ -49,15 +49,70 @@
     </label>
     <label class="full-width">
       <span>Vraagtekst / geplakte e-mail</span>
-      <textarea name="vraag" rows="12" placeholder="Plak hier de volledige klant- of leveranciersvraag, of laat leeg als je alleen een document uploadt."></textarea>
+      <textarea name="vraag" rows="12" placeholder="Plak hier de volledige klant- of leveranciersvraag, of laat leeg als je alleen een document uploadt.">{{ form_values.get('vraag', '') }}</textarea>
     </label>
     <div class="full-width intake-note card subtle-card">
       <strong>Werking</strong>
       <p>Je kunt tekst plakken, een document uploaden of beide combineren. Het systeem maakt daarna automatisch een vraag, beoordeling en conceptantwoord aan en stelt categorieën en relevante wetgeving voor.</p>
     </label>
     <div class="form-actions">
-      <button type="submit">Opslaan en analyseren</button>
+      {% if preview %}
+      <input type="hidden" name="actie" value="opslaan">
+      <input type="hidden" name="upload_name" value="{{ form_values.get('upload_name', '') }}">
+      <input type="hidden" name="upload_content" value="{{ form_values.get('upload_content', '') }}">
+      <button type="submit">Definitief opslaan</button>
+      {% else %}
+      <input type="hidden" name="actie" value="preview">
+      <button type="submit">Analyseer eerst</button>
+      {% endif %}
     </div>
   </form>
+
+  {% if preview %}
+  <section class="preview-panel card subtle-card">
+    <div class="card-head">
+      <h3>Analysevoorstel</h3>
+      <span class="pill">Controleer voor opslaan</span>
+    </div>
+    <div class="preview-grid">
+      <div>
+        <strong>Titel</strong>
+        <p>{{ preview.titel }}</p>
+      </div>
+      <div>
+        <strong>Afzender</strong>
+        <p>{{ preview.afzender_type }} · {{ preview.organisatie }}</p>
+      </div>
+      <div>
+        <strong>Locatie</strong>
+        <p>{{ preview.locatie }}</p>
+      </div>
+      <div>
+        <strong>Bron</strong>
+        <p>{{ preview.bron }}</p>
+      </div>
+      <div>
+        <strong>Tags</strong>
+        <p>{{ ', '.join(preview.tags) }}</p>
+      </div>
+      <div>
+        <strong>Categorieën</strong>
+        <p>{{ ', '.join(preview.categories) }}</p>
+      </div>
+    </div>
+    <div>
+      <strong>Voorgestelde wetgeving</strong>
+      <ul>
+        {% for item in preview.suggested_regulations %}
+        <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div>
+      <strong>Geanalyseerde intake</strong>
+      <pre class="preview-text">{{ preview.intake_text }}</pre>
+    </div>
+  </section>
+  {% endif %}
 </section>
 {% endblock %}

@@ -105,6 +105,21 @@ class SearchFilters:
     status: str
 
 
+@dataclass
+class IntakePreview:
+    afzender_type: str
+    organisatie: str
+    locatie: str
+    titel: str
+    bron: str
+    tags: list[str]
+    categories: list[str]
+    suggested_regulations: list[str]
+    intake_text: str
+    attachment_name: str
+    attachment_present: bool
+
+
 def create_app() -> Flask:
     app = Flask(
         __name__,
@@ -216,19 +231,25 @@ def create_app() -> Flask:
         if request.method == "POST":
             try:
                 upload = request.files.get("bestand")
-                create_case_from_form(
-                    kb_root=kb_root,
-                    afzender_type=request.form.get("afzender_type", "").strip(),
-                    organisatie=request.form.get("organisatie", "").strip(),
-                    locatie=request.form.get("locatie", "").strip(),
-                    titel=request.form.get("titel", "").strip(),
-                    vraag=request.form.get("vraag", "").strip(),
-                    tags=request.form.get("tags", "").strip(),
-                    categories=request.form.get("categorieen", "").strip(),
-                    bron=request.form.get("bron", "").strip(),
-                    upload_name=upload.filename if upload and upload.filename else "",
-                    upload_content=upload.read() if upload and upload.filename else b"",
-                )
+                action = request.form.get("actie", "preview").strip()
+                form_payload = {
+                    "afzender_type": request.form.get("afzender_type", "").strip(),
+                    "organisatie": request.form.get("organisatie", "").strip(),
+                    "locatie": request.form.get("locatie", "").strip(),
+                    "titel": request.form.get("titel", "").strip(),
+                    "vraag": request.form.get("vraag", "").strip(),
+                    "tags": request.form.get("tags", "").strip(),
+                    "categories": request.form.get("categorieen", "").strip(),
+                    "bron": request.form.get("bron", "").strip(),
+                    "upload_name": upload.filename if upload and upload.filename else request.form.get("upload_name", "").strip(),
+                    "upload_content": upload.read() if upload and upload.filename else decode_hidden_bytes(request.form.get("upload_content", "")),
+                }
+
+                if action == "preview":
+                    preview = build_case_preview(**form_payload)
+                    return render_template("casus_nieuw.html", preview=preview, form_values=form_payload)
+
+                create_case_from_form(kb_root=kb_root, **form_payload)
             except ValueError:
                 return redirect(url_for("casussen", status="ongeldige_invoer"))
 
@@ -236,7 +257,7 @@ def create_app() -> Flask:
             build_indexes(kb_root)
             return redirect(url_for("casussen", status="toegevoegd", section="vragen"))
 
-        return render_template("casus_nieuw.html")
+        return render_template("casus_nieuw.html", preview=None, form_values={})
 
     @app.route("/taxonomie")
     def taxonomie() -> str:
@@ -512,28 +533,23 @@ def create_case_from_form(
     upload_content: bytes,
 ) -> tuple[Path, Path, Path]:
     ensure_case_directories(kb_root)
-    normalized_type = slugify(afzender_type) if afzender_type else "extern"
-    if normalized_type not in {"klant", "leverancier", "extern"}:
-        raise ValueError("Ongeldig afzendertype")
-    extracted_upload_text = ""
-    attachment_rel = ""
-    if upload_name and upload_content:
-        attachment_path = save_case_attachment(kb_root, upload_name, upload_content, organisatie or titel)
-        attachment_rel = relative_path(kb_root, attachment_path)
-        extracted_upload_text = extract_text_from_file(attachment_path)
-
-    intake_text = question_intake_text(vraag, extracted_upload_text)
-
-    if not titel:
-        titel = infer_case_title(intake_text, organisatie, normalized_type)
-
-    if not titel or not intake_text:
-        raise ValueError("Titel en vraag zijn verplicht")
+    preview = build_case_preview(
+        afzender_type=afzender_type,
+        organisatie=organisatie,
+        locatie=locatie,
+        titel=titel,
+        vraag=vraag,
+        tags=tags,
+        categories=categories,
+        bron=bron,
+        upload_name=upload_name,
+        upload_content=upload_content,
+    )
 
     now = datetime.now(timezone.utc)
     year = now.strftime("%Y")
     date_str = now.strftime("%Y-%m-%d")
-    slug = slugify(titel)
+    slug = slugify(preview.titel)
     if organisatie:
         slug = f"{slugify(organisatie)}_{slug}"
 
@@ -548,31 +564,29 @@ def create_case_from_form(
         vraag_dir, beoordeling_dir, antwoord_dir, date_str, slug
     )
 
-    tag_list = parse_tags(tags)
-    if not tag_list:
-        tag_list = derive_tags_from_text(f"{titel} {intake_text}")
-
-    category_list = parse_tags(categories)
-    if not category_list:
-        category_list = derive_categories_from_text(f"{titel} {intake_text}")
-
-    summary = summarize_extracted_text(intake_text, titel, max_len=220)
-    suggested_regulations = suggest_relevant_regulations(tag_list, category_list, intake_text)
+    tag_list = preview.tags
+    category_list = preview.categories
+    summary = summarize_extracted_text(preview.intake_text, preview.titel, max_len=220)
+    suggested_regulations = preview.suggested_regulations
     vraag_rel = relative_path(kb_root, vraag_path)
     beoordeling_rel = relative_path(kb_root, beoordeling_path)
     antwoord_rel = relative_path(kb_root, antwoord_path)
+    attachment_rel = ""
+    if preview.attachment_present and upload_name and upload_content:
+        attachment_path = save_case_attachment(kb_root, upload_name, upload_content, organisatie or preview.titel)
+        attachment_rel = relative_path(kb_root, attachment_path)
 
     vraag_path.write_text(
         render_case_question_markdown(
-            titel=titel,
+            titel=preview.titel,
             datum=date_str,
-            afzender_type=normalized_type,
+            afzender_type=preview.afzender_type,
             organisatie=organisatie or "onbekend",
             locatie=locatie or "centrale_beoordeling",
-            vraag=intake_text,
+            vraag=preview.intake_text,
             tags=tag_list,
             categories=category_list,
-            bron=bron or "webformulier",
+            bron=preview.bron,
             attachment_rel=attachment_rel,
             beoordeling_rel=beoordeling_rel,
             antwoord_rel=antwoord_rel,
@@ -583,14 +597,14 @@ def create_case_from_form(
 
     beoordeling_path.write_text(
         render_case_assessment_markdown(
-            titel=titel,
+            titel=preview.titel,
             datum=date_str,
             vraag_rel=vraag_rel,
             antwoord_rel=antwoord_rel,
             tags=tag_list,
             categories=category_list,
             summary=summary,
-            vraag=intake_text,
+            vraag=preview.intake_text,
             suggested_regulations=suggested_regulations,
         ),
         encoding="utf-8",
@@ -598,9 +612,9 @@ def create_case_from_form(
 
     antwoord_path.write_text(
         render_case_answer_markdown(
-            titel=titel,
+            titel=preview.titel,
             datum=date_str,
-            doelgroep=normalized_type,
+            doelgroep=preview.afzender_type,
             vraag_rel=vraag_rel,
             beoordeling_rel=beoordeling_rel,
             tags=tag_list,
@@ -612,6 +626,77 @@ def create_case_from_form(
     )
 
     return vraag_path, beoordeling_path, antwoord_path
+
+
+def build_case_preview(
+    afzender_type: str,
+    organisatie: str,
+    locatie: str,
+    titel: str,
+    vraag: str,
+    tags: str,
+    categories: str,
+    bron: str,
+    upload_name: str,
+    upload_content: bytes,
+) -> IntakePreview:
+    normalized_type = slugify(afzender_type) if afzender_type else "extern"
+    if normalized_type not in {"klant", "leverancier", "extern"}:
+        raise ValueError("Ongeldig afzendertype")
+
+    extracted_upload_text = ""
+    if upload_name and upload_content:
+        temp_path = write_temp_upload(upload_name, upload_content)
+        try:
+            extracted_upload_text = extract_text_from_file(temp_path)
+        finally:
+            temp_path.unlink(missing_ok=True)
+
+    intake_text = question_intake_text(vraag, extracted_upload_text)
+    resolved_title = titel or infer_case_title(intake_text, organisatie, normalized_type)
+    if not resolved_title or not intake_text:
+        raise ValueError("Titel en vraag zijn verplicht")
+
+    tag_list = parse_tags(tags)
+    if not tag_list:
+        tag_list = derive_tags_from_text(f"{resolved_title} {intake_text}")
+
+    category_list = parse_tags(categories)
+    if not category_list:
+        category_list = derive_categories_from_text(f"{resolved_title} {intake_text}")
+
+    return IntakePreview(
+        afzender_type=normalized_type,
+        organisatie=organisatie or "onbekend",
+        locatie=locatie or "centrale_beoordeling",
+        titel=resolved_title,
+        bron=bron or "webformulier",
+        tags=tag_list,
+        categories=category_list,
+        suggested_regulations=suggest_relevant_regulations(tag_list, category_list, intake_text),
+        intake_text=intake_text,
+        attachment_name=upload_name,
+        attachment_present=bool(upload_name and upload_content),
+    )
+
+
+def write_temp_upload(upload_name: str, upload_content: bytes) -> Path:
+    suffix = Path(upload_name).suffix.lower()
+    if suffix not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise ValueError("Unsupported file type")
+    temp_dir = WEBAPP_DIR.parent / ".tmp_uploads"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    path = unique_path(temp_dir / f"preview{suffix}")
+    path.write_bytes(upload_content)
+    return path
+
+
+def encode_hidden_bytes(value: bytes) -> str:
+    return value.hex() if value else ""
+
+
+def decode_hidden_bytes(value: str) -> bytes:
+    return bytes.fromhex(value) if value else b""
 
 
 def ensure_case_directories(kb_root: Path) -> None:
