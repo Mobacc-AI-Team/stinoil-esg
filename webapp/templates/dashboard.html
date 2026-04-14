@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="hero card">
+  <div>
+    <div class="eyebrow">Overzicht</div>
+    <h2>Centraal beoordelen en consistent beantwoorden</h2>
+    <p>Gebruik deze interface om wetgeving te raadplegen, dossiers te openen en antwoorden uniform te beheren.</p>
+  </div>
+  <form method="get" action="{{ url_for('zoek') }}" class="search-form compact">
+    <input type="text" name="q" placeholder="Zoek op onderwerp, tag, locatie of inhoud">
+    <button type="submit">Zoeken</button>
+  </form>
+</section>
+
+<section class="stats-grid">
+  <article class="stat card"><span>Wetgeving</span><strong>{{ stats.wetgeving }}</strong></article>
+  <article class="stat card"><span>Vragen</span><strong>{{ stats.vragen }}</strong></article>
+  <article class="stat card"><span>Beoordelingen</span><strong>{{ stats.beoordelingen }}</strong></article>
+  <article class="stat card"><span>Antwoorden</span><strong>{{ stats.antwoorden }}</strong></article>
+  <article class="stat card"><span>Locaties</span><strong>{{ stats.locaties }}</strong></article>
+</section>
+
+<section class="two-col">
+  <article class="card">
+    <div class="card-head">
+      <h3>Recente vragen</h3>
+      <a href="{{ url_for('casussen', section='vragen') }}">Alles bekijken</a>
+    </div>
+    <ul class="document-list">
+      {% for doc in recent_questions %}
+      <li>
+        <a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a>
+        <span>{{ doc.metadata.get('datum', '') }}</span>
+      </li>
+      {% else %}
+      <li>Geen vragen gevonden.</li>
+      {% endfor %}
+    </ul>
+  </article>
+
+  <article class="card">
+    <div class="card-head">
+      <h3>Recente antwoorden</h3>
+      <a href="{{ url_for('casussen', section='antwoorden') }}">Alles bekijken</a>
+    </div>
+    <ul class="document-list">
+      {% for doc in recent_answers %}
+      <li>
+        <a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a>
+        <span>{{ doc.metadata.get('datum', '') }}</span>
+      </li>
+      {% else %}
+      <li>Geen antwoorden gevonden.</li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h3>Veelgebruikte thema’s</h3>
+    <a href="{{ url_for('zoek', section='wetgeving') }}">Doorzoeken</a>
+  </div>
+  <div class="tag-cloud">
+    {% for tag, count in top_tags %}
+    <a class="tag" href="{{ url_for('zoek', tag=tag) }}">{{ tag }} <span>{{ count }}</span></a>
+    {% else %}
+    <span class="muted">Nog geen tags beschikbaar.</span>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

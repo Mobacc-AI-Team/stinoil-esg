@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Zoeken · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Zoeken</div>
+      <h2>Doorzoek de volledige kennisbank</h2>
+    </div>
+    <form method="get" class="filters-grid">
+      <input type="text" name="q" value="{{ filters.query }}" placeholder="Zoekterm">
+      <select name="section">
+        <option value="">Alle secties</option>
+        {% for key, folder in section_options %}
+        <option value="{{ key }}" {% if filters.section == key %}selected{% endif %}>{{ key }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" name="tag" value="{{ filters.tag }}" placeholder="Tag">
+      <input type="text" name="location" value="{{ filters.location }}" placeholder="Locatie">
+      <input type="text" name="status" value="{{ filters.status }}" placeholder="Status">
+      <button type="submit">Zoeken</button>
+    </form>
+  </div>
+
+  <ul class="search-results">
+    {% for doc in documents %}
+    <li class="card compact-card">
+      <div class="case-meta">{{ doc.section_label }} · {{ doc.rel_path }}</div>
+      <h3><a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a></h3>
+      <p>{{ doc.metadata.get('samenvatting', doc.body[:220]) }}</p>
+    </li>
+    {% else %}
+    <li>Geen documenten gevonden.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

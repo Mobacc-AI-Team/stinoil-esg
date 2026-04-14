@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ document.title }} · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="detail-layout">
+  <aside class="card sidebar">
+    <div class="eyebrow">{{ document.section_label }}</div>
+    <h2>{{ document.title }}</h2>
+    <dl class="meta-list">
+      <div><dt>Bestand</dt><dd><code>{{ document.rel_path }}</code></dd></div>
+      {% for key, value in document.metadata.items() %}
+      <div><dt>{{ key }}</dt><dd>{{ value }}</dd></div>
+      {% endfor %}
+    </dl>
+  </aside>
+
+  <article class="card article-body">
+    {{ rendered_body|safe }}
+  </article>
+</section>
+{% endblock %}

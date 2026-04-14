@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Casussen · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Casussen</div>
+      <h2>Vragen, beoordelingen en antwoorden</h2>
+    </div>
+    <form method="get" class="filters-grid">
+      <input type="text" name="q" value="{{ filters.query }}" placeholder="Zoek op inhoud of onderwerp">
+      <select name="section">
+        <option value="vragen" {% if filters.section == 'vragen' %}selected{% endif %}>Vragen</option>
+        <option value="beoordelingen" {% if filters.section == 'beoordelingen' %}selected{% endif %}>Beoordelingen</option>
+        <option value="antwoorden" {% if filters.section == 'antwoorden' %}selected{% endif %}>Antwoorden</option>
+      </select>
+      <select name="tag">
+        <option value="">Alle tags</option>
+        {% for tag in available_tags %}
+        <option value="{{ tag }}" {% if filters.tag == tag %}selected{% endif %}>{{ tag }}</option>
+        {% endfor %}
+      </select>
+      <select name="location">
+        <option value="">Alle locaties</option>
+        {% for location in available_locations %}
+        <option value="{{ location }}" {% if filters.location == location %}selected{% endif %}>{{ location }}</option>
+        {% endfor %}
+      </select>
+      <select name="status">
+        <option value="">Alle statussen</option>
+        {% for status in available_statuses %}
+        <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Toepassen</button>
+    </form>
+  </div>
+
+  <div class="cards-grid">
+    {% for doc in documents %}
+    <article class="case-card">
+      <div class="case-meta">{{ doc.section_label }} · {{ doc.metadata.get('datum', '—') }}</div>
+      <h3><a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a></h3>
+      <p>{{ doc.metadata.get('samenvatting', 'Geen samenvatting beschikbaar.') }}</p>
+      <div class="pill-row">
+        {% if doc.metadata.get('locatie') %}<span class="pill">{{ doc.metadata.get('locatie') }}</span>{% endif %}
+        {% if doc.metadata.get('status') %}<span class="pill">{{ doc.metadata.get('status') }}</span>{% endif %}
+        {% for tag in doc.tags[:3] %}<span class="pill subtle">{{ tag }}</span>{% endfor %}
+      </div>
+    </article>
+    {% else %}
+    <p>Geen casussen gevonden voor deze filters.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

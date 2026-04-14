@@ -1,0 +1,31 @@
+[
+  {
+    "title": "Klantvraag over CLP-etikettering",
+    "create_time": 1704067200,
+    "update_time": 1704067200,
+    "mapping": {
+      "node-user": {
+        "message": {
+          "author": {"role": "user"},
+          "create_time": 1704067200,
+          "content": {
+            "parts": [
+              "Een klant vraagt of de huidige CLP-etikettering op een spuitbusproduct voldoende is voor levering in Nederland en België."
+            ]
+          }
+        }
+      },
+      "node-assistant": {
+        "message": {
+          "author": {"role": "assistant"},
+          "create_time": 1704067260,
+          "content": {
+            "parts": [
+              "Conceptantwoord: controleer classificatie, verplichte gevarenpictogrammen, H- en P-zinnen, taalvereisten en consistentie met het veiligheidsinformatieblad."
+            ]
+          }
+        }
+      }
+    }
+  }
+]

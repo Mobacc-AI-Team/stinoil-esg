@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Wetgeving · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Wetgeving</div>
+      <h2>Relevante wetgeving en normen</h2>
+    </div>
+    <form method="get" class="search-form">
+      <input type="text" name="q" value="{{ query }}" placeholder="Zoek in wetgeving">
+      <button type="submit">Filter</button>
+    </form>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Titel</th><th>Onderwerp</th><th>Jurisdictie</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for doc in documents %}
+        <tr>
+          <td><a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a></td>
+          <td>{{ doc.metadata.get('onderwerp', '—') }}</td>
+          <td>{{ doc.metadata.get('jurisdictie', '—') }}</td>
+          <td>{{ doc.metadata.get('status', '—') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">Geen wetgevingsdocumenten gevonden.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
