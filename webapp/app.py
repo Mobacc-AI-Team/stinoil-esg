@@ -249,6 +249,15 @@ def create_app() -> Flask:
                     preview = build_case_preview(**form_payload)
                     return render_template("casus_nieuw.html", preview=preview, form_values=form_payload)
 
+                form_payload["titel"] = request.form.get("preview_titel", form_payload["titel"]).strip()
+                form_payload["afzender_type"] = request.form.get("preview_afzender_type", form_payload["afzender_type"]).strip()
+                form_payload["organisatie"] = request.form.get("preview_organisatie", form_payload["organisatie"]).strip()
+                form_payload["locatie"] = request.form.get("preview_locatie", form_payload["locatie"]).strip()
+                form_payload["bron"] = request.form.get("preview_bron", form_payload["bron"]).strip()
+                form_payload["vraag"] = request.form.get("preview_intake_text", form_payload["vraag"]).strip()
+                form_payload["tags"] = request.form.get("preview_tags", form_payload["tags"]).strip()
+                form_payload["categories"] = request.form.get("preview_categories", form_payload["categories"]).strip()
+
                 create_case_from_form(kb_root=kb_root, **form_payload)
             except ValueError:
                 return redirect(url_for("casussen", status="ongeldige_invoer"))

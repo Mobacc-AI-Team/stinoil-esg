@@ -69,6 +69,7 @@ class FlaskInterfaceTests(unittest.TestCase):
         self.assertIn("from collections import defaultdict", source)
         self.assertIn("def suggest_relevant_regulations", source)
         self.assertIn("class IntakePreview", source)
+        self.assertIn("preview_titel", source)
 
     @unittest.skipUnless(FLASK_AVAILABLE, "Flask is niet lokaal geïnstalleerd")
     def test_dashboard_and_detail_pages_render(self) -> None:

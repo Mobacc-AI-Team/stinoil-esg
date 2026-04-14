@@ -77,27 +77,34 @@
     <div class="preview-grid">
       <div>
         <strong>Titel</strong>
-        <p>{{ preview.titel }}</p>
+        <input type="text" name="preview_titel" value="{{ preview.titel }}">
       </div>
       <div>
         <strong>Afzender</strong>
-        <p>{{ preview.afzender_type }} · {{ preview.organisatie }}</p>
+        <div class="preview-inline-fields">
+          <select name="preview_afzender_type">
+            <option value="klant" {% if preview.afzender_type == 'klant' %}selected{% endif %}>Klant</option>
+            <option value="leverancier" {% if preview.afzender_type == 'leverancier' %}selected{% endif %}>Leverancier</option>
+            <option value="extern" {% if preview.afzender_type == 'extern' %}selected{% endif %}>Extern</option>
+          </select>
+          <input type="text" name="preview_organisatie" value="{{ preview.organisatie }}">
+        </div>
       </div>
       <div>
         <strong>Locatie</strong>
-        <p>{{ preview.locatie }}</p>
+        <input type="text" name="preview_locatie" value="{{ preview.locatie }}">
       </div>
       <div>
         <strong>Bron</strong>
-        <p>{{ preview.bron }}</p>
+        <input type="text" name="preview_bron" value="{{ preview.bron }}">
       </div>
       <div>
         <strong>Tags</strong>
-        <p>{{ ', '.join(preview.tags) }}</p>
+        <input type="text" name="preview_tags" value="{{ ', '.join(preview.tags) }}">
       </div>
       <div>
         <strong>Categorieën</strong>
-        <p>{{ ', '.join(preview.categories) }}</p>
+        <input type="text" name="preview_categories" value="{{ ', '.join(preview.categories) }}">
       </div>
     </div>
     <div>
@@ -110,7 +117,7 @@
     </div>
     <div>
       <strong>Geanalyseerde intake</strong>
-      <pre class="preview-text">{{ preview.intake_text }}</pre>
+      <textarea class="preview-textarea" name="preview_intake_text" rows="12">{{ preview.intake_text }}</textarea>
     </div>
   </section>
   {% endif %}
