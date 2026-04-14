@@ -27,18 +27,19 @@
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>Titel</th><th>Onderwerp</th><th>Jurisdictie</th><th>Status</th></tr>
+        <tr><th>Titel</th><th>Onderwerp</th><th>Categorieën</th><th>Jurisdictie</th><th>Status</th></tr>
       </thead>
       <tbody>
         {% for doc in documents %}
         <tr>
           <td><a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a></td>
           <td>{{ doc.metadata.get('onderwerp', '—') }}</td>
+          <td>{{ ', '.join(doc.categories) if doc.categories else '—' }}</td>
           <td>{{ doc.metadata.get('jurisdictie', '—') }}</td>
           <td>{{ doc.metadata.get('status', '—') }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="4">Geen wetgevingsdocumenten gevonden.</td></tr>
+        <tr><td colspan="5">Geen wetgevingsdocumenten gevonden.</td></tr>
         {% endfor %}
       </tbody>
     </table>

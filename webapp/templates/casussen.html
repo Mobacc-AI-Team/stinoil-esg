@@ -20,6 +20,12 @@
         <option value="{{ tag }}" {% if filters.tag == tag %}selected{% endif %}>{{ tag }}</option>
         {% endfor %}
       </select>
+      <select name="category">
+        <option value="">Alle categorieën</option>
+        {% for category in available_categories %}
+        <option value="{{ category }}" {% if filters.category == category %}selected{% endif %}>{{ category }}</option>
+        {% endfor %}
+      </select>
       <select name="location">
         <option value="">Alle locaties</option>
         {% for location in available_locations %}
@@ -46,6 +52,7 @@
         {% if doc.metadata.get('locatie') %}<span class="pill">{{ doc.metadata.get('locatie') }}</span>{% endif %}
         {% if doc.metadata.get('status') %}<span class="pill">{{ doc.metadata.get('status') }}</span>{% endif %}
         {% for tag in doc.tags[:3] %}<span class="pill subtle">{{ tag }}</span>{% endfor %}
+        {% for category in doc.categories[:2] %}<span class="pill subtle">{{ category }}</span>{% endfor %}
       </div>
     </article>
     {% else %}

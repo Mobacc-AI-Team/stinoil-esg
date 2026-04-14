@@ -73,6 +73,17 @@ class DocumentRecord:
         tag = clean_tag(raw)
         return [tag] if tag else []
 
+    @property
+    def categories(self) -> list[str]:
+        raw = self.metadata.get("categorieen", "")
+        if raw.startswith("[") and raw.endswith("]"):
+            inner = raw[1:-1].strip()
+            if not inner:
+                return []
+            return [clean_tag(part) for part in inner.split(",") if clean_tag(part)]
+        category = clean_tag(raw)
+        return [category] if category else []
+
 
 @dataclass
 class DashboardStats:
@@ -88,6 +99,7 @@ class SearchFilters:
     query: str
     section: str
     tag: str
+    category: str
     location: str
     status: str
 
@@ -161,6 +173,7 @@ def create_app() -> Flask:
                     jurisdiction=request.form.get("jurisdictie", "").strip(),
                     subject=request.form.get("onderwerp", "").strip(),
                     tags=request.form.get("tags", "").strip(),
+                    categories=request.form.get("categorieen", "").strip(),
                     source_label=request.form.get("bron", "").strip(),
                 )
             except ValueError:
@@ -180,6 +193,7 @@ def create_app() -> Flask:
             query=request.args.get("q", "").strip(),
             section=request.args.get("section", "vragen").strip(),
             tag=request.args.get("tag", "").strip(),
+            category=request.args.get("category", "").strip(),
             location=request.args.get("location", "").strip(),
             status=request.args.get("status", "").strip(),
         )
@@ -189,6 +203,7 @@ def create_app() -> Flask:
             filters=filters,
             documents=docs,
             available_tags=sorted(unique_values(load_documents(kb_root), "tags")),
+            available_categories=sorted(unique_values(load_documents(kb_root), "categorieen")),
             available_locations=sorted(unique_values(load_documents(kb_root), "locatie")),
             available_statuses=sorted(unique_values(load_documents(kb_root), "status")),
         )
@@ -199,6 +214,7 @@ def create_app() -> Flask:
             query=request.args.get("q", "").strip(),
             section=request.args.get("section", "").strip(),
             tag=request.args.get("tag", "").strip(),
+            category=request.args.get("category", "").strip(),
             location=request.args.get("location", "").strip(),
             status=request.args.get("status", "").strip(),
         )
@@ -319,6 +335,9 @@ def unique_values(documents: Iterable[DocumentRecord], field: str) -> set[str]:
         if field == "tags":
             results.update(doc.tags)
             continue
+        if field == "categorieen":
+            results.update(doc.categories)
+            continue
         value = doc.metadata.get(field, "").strip().strip('"')
         if value:
             results.add(value)
@@ -334,6 +353,8 @@ def filter_documents(documents: Iterable[DocumentRecord], filters: SearchFilters
         results = [doc for doc in results if needle in doc.search_blob]
     if filters.tag:
         results = [doc for doc in results if filters.tag in doc.tags]
+    if filters.category:
+        results = [doc for doc in results if filters.category in doc.categories]
     if filters.location:
         results = [doc for doc in results if doc.metadata.get("locatie", "").strip('"') == filters.location]
     if filters.status:
@@ -351,6 +372,8 @@ def filter_case_documents(documents: Iterable[DocumentRecord], filters: SearchFi
         docs = [doc for doc in docs if needle in doc.search_blob]
     if filters.tag:
         docs = [doc for doc in docs if filters.tag in doc.tags]
+    if filters.category:
+        docs = [doc for doc in docs if filters.category in doc.categories]
     if filters.location:
         docs = [doc for doc in docs if doc.metadata.get("locatie", "").strip('"') == filters.location]
     if filters.status:
@@ -370,6 +393,7 @@ def create_regulation_record_from_upload(
     jurisdiction: str,
     subject: str,
     tags: str,
+    categories: str,
     source_label: str,
 ) -> Path:
     suffix = Path(upload_name).suffix.lower()
@@ -395,6 +419,10 @@ def create_regulation_record_from_upload(
     if not tag_list:
         tag_list = derive_tags_from_text(f"{safe_title} {subject} {extracted_text[:4000]}")
 
+    category_list = parse_tags(categories)
+    if not category_list:
+        category_list = derive_categories_from_text(f"{safe_title} {subject} {extracted_text[:6000]}")
+
     summary = summarize_extracted_text(extracted_text, subject or safe_title)
     source_rel = str(source_path.relative_to(kb_root)).replace("\\", "/")
     regulation_path.write_text(
@@ -406,6 +434,7 @@ def create_regulation_record_from_upload(
             source_rel=source_rel,
             summary=summary,
             tags=tag_list,
+            categories=category_list,
             extracted_text=extracted_text,
             timestamp=timestamp,
         ),
@@ -475,6 +504,30 @@ def derive_tags_from_text(text: str) -> list[str]:
     return found or ["wetgeving_upload"]
 
 
+def derive_categories_from_text(text: str) -> list[str]:
+    lowered = text.lower()
+    category_rules = {
+        "brzo": ["brzo", "seveso", "zware ongevallen"],
+        "atex": ["atex", "explosieve atmosfeer", "explosiegevaar"],
+        "arbeidsomstandighedenbesluit": ["arbeidsomstandighedenbesluit", "arbobesluit"],
+        "arbeidsomstandighedenregeling": ["arbeidsomstandighedenregeling", "arboregeling"],
+        "qra": ["qra", "quantitative risk assessment", "risicoanalyse"],
+        "pgs_richtlijnen": ["pgs", "publicatiereeks gevaarlijke stoffen"],
+        "vergunningen": ["vergunning", "omgevingsvergunning", "maatwerkvoorschrift"],
+        "reach": ["reach", "svhc", "restrictie", "autorisatie"],
+        "clp": ["clp", "etikettering", "classificatie", "gevarenpictogram"],
+        "adr": ["adr", "transport", "un-nummer", "vervoersdocument"],
+        "sds": ["sds", "veiligheidsinformatieblad"],
+        "opslag_gevaarlijke_stoffen": ["opslag", "magazijn", "incompatibele stoffen"],
+        "emissies": ["emissie", "lucht", "waterlozing", "vos"],
+    }
+    found: list[str] = []
+    for category, markers in category_rules.items():
+        if any(marker in lowered for marker in markers):
+            found.append(category)
+    return found or ["algemene_wetgeving"]
+
+
 def summarize_extracted_text(text: str, fallback: str, max_len: int = 280) -> str:
     cleaned = re.sub(r"\s+", " ", text).strip()
     if not cleaned:
@@ -503,10 +556,12 @@ def render_uploaded_regulation_markdown(
     source_rel: str,
     summary: str,
     tags: list[str],
+    categories: list[str],
     extracted_text: str,
     timestamp: str,
 ) -> str:
     searchable_text = extracted_text.strip() or "Geen extraheerbare tekst gevonden."
+    categories_block = "\n".join(f"- {category}" for category in categories) if categories else "- Nog te bepalen"
     return f"""---
 titel: {yaml_escape(title)}
 datum: {timestamp}
@@ -516,6 +571,7 @@ bron: {yaml_escape(source_label)}
 bronbestand: {yaml_escape(source_rel)}
 status: actief
 tags: {format_yaml_list(tags)}
+categorieen: {format_yaml_list(categories)}
 samenvatting: {yaml_escape(summary)}
 ---
 
@@ -529,6 +585,9 @@ Nog te valideren op basis van de brontekst.
 
 ## Relevantie voor het bedrijf
 Nog aan te vullen na inhoudelijke beoordeling.
+
+## Categorieen
+{categories_block}
 
 ## Kernverplichtingen
 - Nog aan te vullen
