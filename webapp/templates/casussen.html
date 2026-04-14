@@ -7,6 +7,7 @@
       <div class="eyebrow">Casussen</div>
       <h2>Vragen, beoordelingen en antwoorden</h2>
     </div>
+    <div class="action-stack">
     <form method="get" class="filters-grid">
       <input type="text" name="q" value="{{ filters.query }}" placeholder="Zoek op inhoud of onderwerp">
       <select name="section">
@@ -40,7 +41,14 @@
       </select>
       <button type="submit">Toepassen</button>
     </form>
+    <a class="button-link" href="{{ url_for('nieuwe_casus') }}">Nieuwe externe vraag</a>
+    </div>
   </div>
+  {% if create_status == 'toegevoegd' %}
+  <div class="notice success">Vraag gearchiveerd en gekoppelde beoordeling plus antwoord zijn aangemaakt.</div>
+  {% elif create_status == 'ongeldige_invoer' %}
+  <div class="notice error">Vul minimaal afzender, titel en vraagtekst in.</div>
+  {% endif %}
 
   <div class="cards-grid">
     {% for doc in documents %}

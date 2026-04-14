@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Nieuwe vraag · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card form-shell">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Nieuwe vraag</div>
+      <h2>Archiveer een klant- of leveranciersvraag</h2>
+      <p>Dit formulier maakt automatisch een vraag, beoordeling en conceptantwoord aan in de kennisbank.</p>
+    </div>
+  </div>
+
+  <form method="post" class="upload-grid">
+    <label>
+      <span>Type afzender</span>
+      <select name="afzender_type" required>
+        <option value="klant">Klant</option>
+        <option value="leverancier">Leverancier</option>
+        <option value="extern">Extern</option>
+      </select>
+    </label>
+    <label>
+      <span>Organisatie</span>
+      <input type="text" name="organisatie" placeholder="Bijvoorbeeld: leverancier X of klant Y">
+    </label>
+    <label>
+      <span>Locatie</span>
+      <input type="text" name="locatie" placeholder="Bijvoorbeeld: centrale_beoordeling of locatie Moerdijk">
+    </label>
+    <label>
+      <span>Titel</span>
+      <input type="text" name="titel" placeholder="Korte titel van de vraag" required>
+    </label>
+    <label>
+      <span>Tags</span>
+      <input type="text" name="tags" placeholder="Bijvoorbeeld: clp, sds, transport">
+    </label>
+    <label>
+      <span>Categorieën</span>
+      <input type="text" name="categorieen" placeholder="Bijvoorbeeld: brzo, atex, vergunningen">
+    </label>
+    <label>
+      <span>Bron</span>
+      <input type="text" name="bron" placeholder="Bijvoorbeeld: e-mail, telefoonnotitie, Teams">
+    </label>
+    <label class="full-width">
+      <span>Vraagtekst</span>
+      <textarea name="vraag" rows="10" placeholder="Volledige klant- of leveranciersvraag" required></textarea>
+    </label>
+    <div class="form-actions">
+      <button type="submit">Opslaan en archiveren</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

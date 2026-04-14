@@ -150,6 +150,11 @@ a:hover { text-decoration: underline; }
   align-items: center;
   flex-wrap: wrap;
 }
+.action-stack {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
 .search-form { grid-template-columns: 1fr auto; }
 .search-form.compact { min-width: min(420px, 100%); }
 .filters-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
@@ -170,9 +175,8 @@ a:hover { text-decoration: underline; }
   margin-top: 0;
   color: var(--muted);
 }
-.form-actions {
-  grid-column: 1 / -1;
-}
+.form-actions { grid-column: 1 / -1; }
+.full-width { grid-column: 1 / -1; }
 .button-link {
   display: inline-flex;
   align-items: center;
@@ -202,7 +206,7 @@ a:hover { text-decoration: underline; }
   color: #8b2632;
   border: 1px solid #ffd4d6;
 }
-input, select, button {
+input, select, button, textarea {
   width: 100%;
   padding: 12px 14px;
   border-radius: 12px;
@@ -210,6 +214,7 @@ input, select, button {
   background: white;
   font: inherit;
 }
+textarea { resize: vertical; }
 button {
   background: var(--brand);
   color: white;

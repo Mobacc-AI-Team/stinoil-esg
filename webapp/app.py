@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import re
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from functools import lru_cache
 from html import escape
@@ -207,7 +207,32 @@ def create_app() -> Flask:
             available_categories=sorted(unique_values(load_documents(kb_root), "categorieen")),
             available_locations=sorted(unique_values(load_documents(kb_root), "locatie")),
             available_statuses=sorted(unique_values(load_documents(kb_root), "status")),
+            create_status=request.args.get("status", "").strip(),
         )
+
+    @app.route("/casussen/nieuw", methods=["GET", "POST"])
+    def nieuwe_casus() -> str:
+        if request.method == "POST":
+            try:
+                create_case_from_form(
+                    kb_root=kb_root,
+                    afzender_type=request.form.get("afzender_type", "").strip(),
+                    organisatie=request.form.get("organisatie", "").strip(),
+                    locatie=request.form.get("locatie", "").strip(),
+                    titel=request.form.get("titel", "").strip(),
+                    vraag=request.form.get("vraag", "").strip(),
+                    tags=request.form.get("tags", "").strip(),
+                    categories=request.form.get("categorieen", "").strip(),
+                    bron=request.form.get("bron", "").strip(),
+                )
+            except ValueError:
+                return redirect(url_for("casussen", status="ongeldige_invoer"))
+
+            load_documents.cache_clear()
+            build_indexes(kb_root)
+            return redirect(url_for("casussen", status="toegevoegd", section="vragen"))
+
+        return render_template("casus_nieuw.html")
 
     @app.route("/taxonomie")
     def taxonomie() -> str:
@@ -467,6 +492,251 @@ def create_regulation_record_from_upload(
         encoding="utf-8",
     )
     return regulation_path
+
+
+def create_case_from_form(
+    kb_root: Path,
+    afzender_type: str,
+    organisatie: str,
+    locatie: str,
+    titel: str,
+    vraag: str,
+    tags: str,
+    categories: str,
+    bron: str,
+) -> tuple[Path, Path, Path]:
+    normalized_type = slugify(afzender_type) if afzender_type else "extern"
+    if normalized_type not in {"klant", "leverancier", "extern"}:
+        raise ValueError("Ongeldig afzendertype")
+    if not titel or not vraag:
+        raise ValueError("Titel en vraag zijn verplicht")
+
+    now = datetime.now(timezone.utc)
+    year = now.strftime("%Y")
+    date_str = now.strftime("%Y-%m-%d")
+    slug = slugify(titel)
+    if organisatie:
+        slug = f"{slugify(organisatie)}_{slug}"
+
+    vraag_dir = kb_root / "02_Vragen" / year
+    beoordeling_dir = kb_root / "03_Beoordelingen" / year
+    antwoord_dir = kb_root / "04_Antwoorden" / year
+    vraag_dir.mkdir(parents=True, exist_ok=True)
+    beoordeling_dir.mkdir(parents=True, exist_ok=True)
+    antwoord_dir.mkdir(parents=True, exist_ok=True)
+
+    vraag_path, beoordeling_path, antwoord_path = unique_case_paths(
+        vraag_dir, beoordeling_dir, antwoord_dir, date_str, slug
+    )
+
+    tag_list = parse_tags(tags)
+    if not tag_list:
+        tag_list = derive_tags_from_text(f"{titel} {vraag}")
+
+    category_list = parse_tags(categories)
+    if not category_list:
+        category_list = derive_categories_from_text(f"{titel} {vraag}")
+
+    summary = summarize_extracted_text(vraag, titel, max_len=220)
+    vraag_rel = relative_path(kb_root, vraag_path)
+    beoordeling_rel = relative_path(kb_root, beoordeling_path)
+    antwoord_rel = relative_path(kb_root, antwoord_path)
+
+    vraag_path.write_text(
+        render_case_question_markdown(
+            titel=titel,
+            datum=date_str,
+            afzender_type=normalized_type,
+            organisatie=organisatie or "onbekend",
+            locatie=locatie or "centrale_beoordeling",
+            vraag=vraag,
+            tags=tag_list,
+            categories=category_list,
+            bron=bron or "webformulier",
+            beoordeling_rel=beoordeling_rel,
+            antwoord_rel=antwoord_rel,
+            summary=summary,
+        ),
+        encoding="utf-8",
+    )
+
+    beoordeling_path.write_text(
+        render_case_assessment_markdown(
+            titel=titel,
+            datum=date_str,
+            vraag_rel=vraag_rel,
+            antwoord_rel=antwoord_rel,
+            tags=tag_list,
+            categories=category_list,
+            summary=summary,
+            vraag=vraag,
+        ),
+        encoding="utf-8",
+    )
+
+    antwoord_path.write_text(
+        render_case_answer_markdown(
+            titel=titel,
+            datum=date_str,
+            doelgroep=normalized_type,
+            vraag_rel=vraag_rel,
+            beoordeling_rel=beoordeling_rel,
+            tags=tag_list,
+            categories=category_list,
+            summary=summary,
+        ),
+        encoding="utf-8",
+    )
+
+    return vraag_path, beoordeling_path, antwoord_path
+
+
+def unique_case_paths(
+    vraag_dir: Path,
+    beoordeling_dir: Path,
+    antwoord_dir: Path,
+    date_str: str,
+    slug: str,
+) -> tuple[Path, Path, Path]:
+    counter = 1
+    while True:
+        suffix = "" if counter == 1 else f"_{counter}"
+        base = f"{date_str}_{slug}{suffix}"
+        vraag_path = vraag_dir / f"{base}_vraag.md"
+        beoordeling_path = beoordeling_dir / f"{base}_beoordeling.md"
+        antwoord_path = antwoord_dir / f"{base}_antwoord.md"
+        if not any(path.exists() for path in (vraag_path, beoordeling_path, antwoord_path)):
+            return vraag_path, beoordeling_path, antwoord_path
+        counter += 1
+
+
+def render_case_question_markdown(
+    titel: str,
+    datum: str,
+    afzender_type: str,
+    organisatie: str,
+    locatie: str,
+    vraag: str,
+    tags: list[str],
+    categories: list[str],
+    bron: str,
+    beoordeling_rel: str,
+    antwoord_rel: str,
+    summary: str,
+) -> str:
+    return f"""---
+titel: {yaml_escape(titel)}
+datum: {datum}
+locatie: {yaml_escape(locatie)}
+afzender_type: {yaml_escape(afzender_type)}
+organisatie: {yaml_escape(organisatie)}
+status: nieuw
+bron: {yaml_escape(bron)}
+tags: {format_yaml_list(tags)}
+categorieen: {format_yaml_list(categories)}
+beoordeling: {yaml_escape(beoordeling_rel)}
+antwoord: {yaml_escape(antwoord_rel)}
+samenvatting: {yaml_escape(summary)}
+---
+
+# Vraag
+
+## Onderwerp
+{titel}
+
+## Herkomst
+- Type afzender: {afzender_type}
+- Organisatie: {organisatie}
+- Locatie: {locatie}
+- Invoerbron: {bron}
+
+## Vraagstelling
+{vraag}
+""".strip() + "\n"
+
+
+def render_case_assessment_markdown(
+    titel: str,
+    datum: str,
+    vraag_rel: str,
+    antwoord_rel: str,
+    tags: list[str],
+    categories: list[str],
+    summary: str,
+    vraag: str,
+) -> str:
+    category_block = "\n".join(f"- {item}" for item in categories) if categories else "- Nog te bepalen"
+    return f"""---
+titel: {yaml_escape(titel)}
+datum: {datum}
+status: concept
+tags: {format_yaml_list(tags)}
+categorieen: {format_yaml_list(categories)}
+vraagbestand: {yaml_escape(vraag_rel)}
+antwoordbestand: {yaml_escape(antwoord_rel)}
+eigenaar: compliance
+samenvatting: {yaml_escape(summary)}
+---
+
+# Beoordeling
+
+## Casus
+{titel}
+
+## Samenvatting
+{summary}
+
+## Categorieen
+{category_block}
+
+## Vraag
+{vraag}
+
+## Relevante wetgeving / normen / kaders
+- Nog aan te vullen
+
+## Analyse
+- Nog aan te vullen
+
+## Uniform standpunt
+- Nog vast te stellen
+""".strip() + "\n"
+
+
+def render_case_answer_markdown(
+    titel: str,
+    datum: str,
+    doelgroep: str,
+    vraag_rel: str,
+    beoordeling_rel: str,
+    tags: list[str],
+    categories: list[str],
+    summary: str,
+) -> str:
+    return f"""---
+titel: {yaml_escape(titel)}
+datum: {datum}
+doelgroep: {yaml_escape(doelgroep)}
+status: concept
+tags: {format_yaml_list(tags)}
+categorieen: {format_yaml_list(categories)}
+vraagbestand: {yaml_escape(vraag_rel)}
+beoordelingsbestand: {yaml_escape(beoordeling_rel)}
+samenvatting: {yaml_escape(summary)}
+---
+
+# Antwoord
+
+## Onderwerp
+{titel}
+
+## Conceptantwoord
+Nog op te stellen.
+
+## Onderbouwing
+- Toets aan beoordeling: `{beoordeling_rel}`
+- Controle op locatiespecifieke afwijkingen: nog uitvoeren
+""".strip() + "\n"
 
 
 def normalize_jurisdiction(value: str) -> str:

@@ -62,6 +62,7 @@ class FlaskInterfaceTests(unittest.TestCase):
         self.assertIn("@app.route(\"/\")", source)
         self.assertIn("@app.route(\"/wetgeving\")", source)
         self.assertIn("@app.route(\"/casussen\")", source)
+        self.assertIn("@app.route(\"/casussen/nieuw\", methods=[\"GET\", \"POST\"])", source)
         self.assertIn("@app.route(\"/wetgeving/upload\", methods=[\"GET\", \"POST\"])", source)
         self.assertIn("def derive_categories_from_text", source)
         self.assertIn("@app.route(\"/taxonomie\")", source)
