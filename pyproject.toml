@@ -3,7 +3,9 @@ name = "mcc-esg-compliance-kb"
 version = "0.1.0"
 description = "Compliance knowledge base Flask app for Vercel"
 requires-python = ">=3.9"
+dependencies = [
+    "Flask>=3.0,<4.0",
+]
 
 [project.scripts]
 app = "webapp.app:app"
-

@@ -82,6 +82,10 @@ class FlaskInterfaceTests(unittest.TestCase):
             self.assertEqual(wetgeving.status_code, 200)
             self.assertIn("REACH-verordening", wetgeving.get_data(as_text=True))
 
+            health = client.get("/healthz")
+            self.assertEqual(health.status_code, 200)
+            self.assertIn("kb_exists", health.get_data(as_text=True))
+
             detail = client.get("/document/02_Vragen/2024/2024-01-01_klantvraag_over_clp_vraag.md")
             self.assertEqual(detail.status_code, 200)
             self.assertIn("Klantvraag over CLP", detail.get_data(as_text=True))

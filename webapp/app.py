@@ -11,7 +11,8 @@ from typing import Iterable
 from flask import Flask, abort, render_template, request
 
 
-DEFAULT_KB_ROOT = Path(__file__).resolve().parent.parent / "ChemieComplianceKennisbank"
+WEBAPP_DIR = Path(__file__).resolve().parent
+DEFAULT_KB_ROOT = WEBAPP_DIR.parent / "ChemieComplianceKennisbank"
 FRONTMATTER_DELIMITER = "---"
 SECTION_MAP = {
     "wetgeving": "01_Wetgeving",
@@ -72,7 +73,11 @@ class SearchFilters:
 
 
 def create_app() -> Flask:
-    app = Flask(__name__)
+    app = Flask(
+        __name__,
+        template_folder=str(WEBAPP_DIR / "templates"),
+        static_folder=None,
+    )
     kb_root = Path(os.environ.get("KB_ROOT", DEFAULT_KB_ROOT)).expanduser().resolve()
     app.config["KB_ROOT"] = kb_root
 
@@ -96,6 +101,15 @@ def create_app() -> Flask:
             recent_answers=list(reversed(recent_answers)),
             top_tags=top_tags(documents),
         )
+
+    @app.route("/healthz")
+    def healthz() -> tuple[dict[str, object], int]:
+        return {
+            "ok": True,
+            "kb_root": str(kb_root),
+            "kb_exists": kb_root.exists(),
+            "documents": len(load_documents(kb_root)),
+        }, 200
 
     @app.route("/wetgeving")
     def wetgeving() -> str:
