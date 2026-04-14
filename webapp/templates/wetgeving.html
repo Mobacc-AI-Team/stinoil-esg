@@ -7,11 +7,23 @@
       <div class="eyebrow">Wetgeving</div>
       <h2>Relevante wetgeving en normen</h2>
     </div>
-    <form method="get" class="search-form">
-      <input type="text" name="q" value="{{ query }}" placeholder="Zoek in wetgeving">
-      <button type="submit">Filter</button>
-    </form>
+    <div class="action-row">
+      <form method="get" class="search-form">
+        <input type="text" name="q" value="{{ query }}" placeholder="Zoek in wetgeving">
+        <button type="submit">Filter</button>
+      </form>
+      <a class="button-link" href="{{ url_for('wetgeving_upload') }}">Upload document</a>
+    </div>
   </div>
+  {% if upload_status == 'toegevoegd' %}
+  <div class="notice success">Document toegevoegd aan de bibliotheek en direct zoekbaar gemaakt.</div>
+  {% elif upload_status == 'geen_bestand' %}
+  <div class="notice error">Selecteer eerst een bestand om te uploaden.</div>
+  {% elif upload_status == 'ongeldig_bestand' %}
+  <div class="notice error">Bestandstype niet ondersteund. Gebruik pdf, docx, txt of md.</div>
+  {% elif upload_status == 'extractie_mislukt' %}
+  <div class="notice error">Tekstextractie mislukt. Controleer het document of probeer een tekstversie.</div>
+  {% endif %}
   <div class="table-wrap">
     <table>
       <thead>

@@ -5,6 +5,8 @@ description = "Compliance knowledge base Flask app for Vercel"
 requires-python = ">=3.9"
 dependencies = [
     "Flask>=3.0,<4.0",
+    "pypdf>=4.2,<6.0",
+    "python-docx>=1.1,<2.0",
 ]
 
 [project.scripts]

@@ -62,6 +62,7 @@ class FlaskInterfaceTests(unittest.TestCase):
         self.assertIn("@app.route(\"/\")", source)
         self.assertIn("@app.route(\"/wetgeving\")", source)
         self.assertIn("@app.route(\"/casussen\")", source)
+        self.assertIn("@app.route(\"/wetgeving/upload\", methods=[\"GET\", \"POST\"])", source)
 
     @unittest.skipUnless(FLASK_AVAILABLE, "Flask is niet lokaal geïnstalleerd")
     def test_dashboard_and_detail_pages_render(self) -> None:

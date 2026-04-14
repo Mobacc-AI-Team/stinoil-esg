@@ -2,13 +2,26 @@ from __future__ import annotations
 
 import os
 import re
+from datetime import datetime
 from dataclasses import dataclass
 from functools import lru_cache
 from html import escape
 from pathlib import Path
 from typing import Iterable
 
-from flask import Flask, abort, render_template, request
+from flask import Flask, abort, redirect, render_template, request, url_for
+
+from chatgpt_export_to_kb import build_indexes, format_yaml_list, slugify, yaml_escape
+
+try:
+    from docx import Document as DocxDocument
+except Exception:  # noqa: BLE001
+    DocxDocument = None
+
+try:
+    from pypdf import PdfReader
+except Exception:  # noqa: BLE001
+    PdfReader = None
 
 
 WEBAPP_DIR = Path(__file__).resolve().parent
@@ -24,6 +37,13 @@ SECTION_MAP = {
     "templates": "07_Templates",
     "index": "08_Index",
     "workflows": "09_Workflows",
+}
+ALLOWED_UPLOAD_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
+SOURCE_FOLDER_MAP = {
+    ".pdf": "pdf",
+    ".docx": "interne_documenten",
+    ".txt": "interne_documenten",
+    ".md": "interne_documenten",
 }
 
 
@@ -118,7 +138,41 @@ def create_app() -> Flask:
         if query:
             needle = query.lower()
             documents = [doc for doc in documents if needle in doc.search_blob]
-        return render_template("wetgeving.html", query=query, documents=documents)
+        return render_template(
+            "wetgeving.html",
+            query=query,
+            documents=documents,
+            upload_status=request.args.get("status", "").strip(),
+        )
+
+    @app.route("/wetgeving/upload", methods=["GET", "POST"])
+    def wetgeving_upload() -> str:
+        if request.method == "POST":
+            upload = request.files.get("bestand")
+            if upload is None or not upload.filename:
+                return redirect(url_for("wetgeving", status="geen_bestand"))
+
+            try:
+                create_regulation_record_from_upload(
+                    kb_root=kb_root,
+                    upload_name=upload.filename,
+                    binary_content=upload.read(),
+                    title=request.form.get("titel", "").strip(),
+                    jurisdiction=request.form.get("jurisdictie", "").strip(),
+                    subject=request.form.get("onderwerp", "").strip(),
+                    tags=request.form.get("tags", "").strip(),
+                    source_label=request.form.get("bron", "").strip(),
+                )
+            except ValueError:
+                return redirect(url_for("wetgeving", status="ongeldig_bestand"))
+            except RuntimeError:
+                return redirect(url_for("wetgeving", status="extractie_mislukt"))
+
+            load_documents.cache_clear()
+            build_indexes(kb_root)
+            return redirect(url_for("wetgeving", status="toegevoegd"))
+
+        return render_template("wetgeving_upload.html")
 
     @app.route("/casussen")
     def casussen() -> str:
@@ -306,6 +360,188 @@ def filter_case_documents(documents: Iterable[DocumentRecord], filters: SearchFi
 
 def clean_tag(value: str) -> str:
     return value.strip().strip('"').strip("'")
+
+
+def create_regulation_record_from_upload(
+    kb_root: Path,
+    upload_name: str,
+    binary_content: bytes,
+    title: str,
+    jurisdiction: str,
+    subject: str,
+    tags: str,
+    source_label: str,
+) -> Path:
+    suffix = Path(upload_name).suffix.lower()
+    if suffix not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise ValueError("Unsupported file type")
+
+    safe_title = title or Path(upload_name).stem.replace("_", " ").strip() or "Wetgeving upload"
+    normalized_jurisdiction = normalize_jurisdiction(jurisdiction)
+    target_slug = slugify(safe_title)
+    timestamp = datetime.utcnow().strftime("%Y-%m-%d")
+
+    source_dir = kb_root / "05_Bronnen" / SOURCE_FOLDER_MAP[suffix]
+    source_dir.mkdir(parents=True, exist_ok=True)
+    source_path = unique_path(source_dir / f"{target_slug}{suffix}")
+    source_path.write_bytes(binary_content)
+
+    extracted_text = extract_text_from_file(source_path)
+    regulation_dir = kb_root / "01_Wetgeving" / normalized_jurisdiction
+    regulation_dir.mkdir(parents=True, exist_ok=True)
+    regulation_path = unique_path(regulation_dir / f"{target_slug}.md")
+
+    tag_list = parse_tags(tags)
+    if not tag_list:
+        tag_list = derive_tags_from_text(f"{safe_title} {subject} {extracted_text[:4000]}")
+
+    summary = summarize_extracted_text(extracted_text, subject or safe_title)
+    source_rel = str(source_path.relative_to(kb_root)).replace("\\", "/")
+    regulation_path.write_text(
+        render_uploaded_regulation_markdown(
+            title=safe_title,
+            jurisdiction=normalized_jurisdiction,
+            subject=subject or infer_subject(extracted_text),
+            source_label=source_label or upload_name,
+            source_rel=source_rel,
+            summary=summary,
+            tags=tag_list,
+            extracted_text=extracted_text,
+            timestamp=timestamp,
+        ),
+        encoding="utf-8",
+    )
+    return regulation_path
+
+
+def normalize_jurisdiction(value: str) -> str:
+    cleaned = slugify(value) if value else "nationaal"
+    if cleaned in {"eu", "nationaal", "lokaal", "normen_en_richtlijnen"}:
+        return cleaned
+    return "nationaal"
+
+
+def unique_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+    counter = 2
+    while True:
+        candidate = path.with_name(f"{path.stem}_{counter}{path.suffix}")
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
+def extract_text_from_file(path: Path) -> str:
+    suffix = path.suffix.lower()
+    if suffix in {".txt", ".md"}:
+        return path.read_text(encoding="utf-8", errors="ignore")
+    if suffix == ".pdf":
+        if PdfReader is None:
+            raise RuntimeError("pypdf ontbreekt")
+        reader = PdfReader(str(path))
+        pages = [page.extract_text() or "" for page in reader.pages]
+        return "\n".join(pages).strip()
+    if suffix == ".docx":
+        if DocxDocument is None:
+            raise RuntimeError("python-docx ontbreekt")
+        document = DocxDocument(str(path))
+        return "\n".join(paragraph.text for paragraph in document.paragraphs).strip()
+    raise ValueError("Unsupported file type")
+
+
+def parse_tags(raw: str) -> list[str]:
+    return [clean_tag(part) for part in raw.split(",") if clean_tag(part)]
+
+
+def derive_tags_from_text(text: str) -> list[str]:
+    lowered = text.lower()
+    vocabulary = [
+        "reach",
+        "clp",
+        "adr",
+        "pgs15",
+        "brzo",
+        "bal",
+        "etikettering",
+        "sds",
+        "veiligheid",
+        "gevaarlijke stoffen",
+        "emissie",
+        "opslag",
+        "transport",
+    ]
+    found = [slugify(tag) if " " in tag else tag for tag in vocabulary if tag in lowered]
+    return found or ["wetgeving_upload"]
+
+
+def summarize_extracted_text(text: str, fallback: str, max_len: int = 280) -> str:
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    if not cleaned:
+        return fallback
+    return cleaned[: max_len - 1].rstrip() + "…" if len(cleaned) > max_len else cleaned
+
+
+def infer_subject(text: str) -> str:
+    lowered = text.lower()
+    if "etiket" in lowered or "label" in lowered:
+        return "etikettering"
+    if "transport" in lowered or "adr" in lowered:
+        return "transport"
+    if "opslag" in lowered or "pgs" in lowered:
+        return "opslag gevaarlijke stoffen"
+    if "veiligheidsinformatieblad" in lowered or "sds" in lowered:
+        return "veiligheidsinformatieblad"
+    return "nog_te_bepalen"
+
+
+def render_uploaded_regulation_markdown(
+    title: str,
+    jurisdiction: str,
+    subject: str,
+    source_label: str,
+    source_rel: str,
+    summary: str,
+    tags: list[str],
+    extracted_text: str,
+    timestamp: str,
+) -> str:
+    searchable_text = extracted_text.strip() or "Geen extraheerbare tekst gevonden."
+    return f"""---
+titel: {yaml_escape(title)}
+datum: {timestamp}
+jurisdictie: {yaml_escape(jurisdiction)}
+onderwerp: {yaml_escape(subject)}
+bron: {yaml_escape(source_label)}
+bronbestand: {yaml_escape(source_rel)}
+status: actief
+tags: {format_yaml_list(tags)}
+samenvatting: {yaml_escape(summary)}
+---
+
+# Wetgeving
+
+## Onderwerp
+{title}
+
+## Reikwijdte
+Nog te valideren op basis van de brontekst.
+
+## Relevantie voor het bedrijf
+Nog aan te vullen na inhoudelijke beoordeling.
+
+## Kernverplichtingen
+- Nog aan te vullen
+
+## Toetsingspunten
+- Nog aan te vullen
+
+## Bronnen
+- Upload: `{source_rel}`
+
+## Geextraheerde brontekst
+{searchable_text}
+""".strip() + "\n"
 
 
 def markdown_to_html(markdown_text: str) -> str:

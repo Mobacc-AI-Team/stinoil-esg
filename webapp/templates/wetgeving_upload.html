@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Upload wetgeving · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card form-shell">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Upload</div>
+      <h2>Voeg wetgeving toe aan de bibliotheek</h2>
+      <p>Na upload wordt het bronbestand opgeslagen, een wetgevingskaart aangemaakt en de inhoud direct zoekbaar gemaakt.</p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="upload-grid">
+    <label>
+      <span>Bestand</span>
+      <input type="file" name="bestand" accept=".pdf,.docx,.txt,.md" required>
+    </label>
+    <label>
+      <span>Titel</span>
+      <input type="text" name="titel" placeholder="Bijvoorbeeld: ADR 2025 wijziging">
+    </label>
+    <label>
+      <span>Jurisdictie</span>
+      <select name="jurisdictie">
+        <option value="nationaal">Nationaal</option>
+        <option value="eu">EU</option>
+        <option value="lokaal">Lokaal</option>
+        <option value="normen_en_richtlijnen">Normen en richtlijnen</option>
+      </select>
+    </label>
+    <label>
+      <span>Onderwerp</span>
+      <input type="text" name="onderwerp" placeholder="Bijvoorbeeld: etikettering, opslag, transport">
+    </label>
+    <label>
+      <span>Tags</span>
+      <input type="text" name="tags" placeholder="Bijvoorbeeld: clp, etikettering, compliance">
+    </label>
+    <label>
+      <span>Bronlabel</span>
+      <input type="text" name="bron" placeholder="Bijvoorbeeld: Eur-Lex of overheid.nl">
+    </label>
+    <div class="form-actions">
+      <button type="submit">Uploaden en opnemen</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
