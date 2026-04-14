@@ -212,6 +212,7 @@ def create_app() -> Flask:
 
     @app.route("/casussen/nieuw", methods=["GET", "POST"])
     def nieuwe_casus() -> str:
+        ensure_case_directories(kb_root)
         if request.method == "POST":
             try:
                 create_case_from_form(
@@ -505,6 +506,7 @@ def create_case_from_form(
     categories: str,
     bron: str,
 ) -> tuple[Path, Path, Path]:
+    ensure_case_directories(kb_root)
     normalized_type = slugify(afzender_type) if afzender_type else "extern"
     if normalized_type not in {"klant", "leverancier", "extern"}:
         raise ValueError("Ongeldig afzendertype")
@@ -589,6 +591,11 @@ def create_case_from_form(
     )
 
     return vraag_path, beoordeling_path, antwoord_path
+
+
+def ensure_case_directories(kb_root: Path) -> None:
+    for rel in ["02_Vragen", "03_Beoordelingen", "04_Antwoorden"]:
+        (kb_root / rel).mkdir(parents=True, exist_ok=True)
 
 
 def unique_case_paths(
