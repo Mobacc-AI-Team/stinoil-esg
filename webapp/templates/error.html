@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Fout · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="eyebrow">Applicatiefout</div>
+  <h2>Er ging iets mis in de applicatie</h2>
+  <p>De pagina kon niet volledig worden opgebouwd. Hieronder staat de technische foutmelding zodat we gerichter kunnen herstellen.</p>
+  <div class="notice error">
+    <strong>{{ error_type }}</strong><br>
+    <span>{{ error_message }}</span>
+  </div>
+</section>
+{% endblock %}

@@ -129,6 +129,17 @@ def create_app() -> Flask:
     kb_root = Path(os.environ.get("KB_ROOT", DEFAULT_KB_ROOT)).expanduser().resolve()
     app.config["KB_ROOT"] = kb_root
 
+    @app.errorhandler(Exception)
+    def handle_exception(exc: Exception):  # type: ignore[override]
+        return (
+            render_template(
+                "error.html",
+                error_type=type(exc).__name__,
+                error_message=str(exc),
+            ),
+            500,
+        )
+
     @app.context_processor
     def inject_globals() -> dict[str, object]:
         return {

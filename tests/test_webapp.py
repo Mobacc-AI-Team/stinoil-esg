@@ -71,6 +71,7 @@ class FlaskInterfaceTests(unittest.TestCase):
         self.assertIn("class IntakePreview", source)
         self.assertIn("preview_titel", source)
         self.assertIn("def find_related_documents", source)
+        self.assertIn("@app.errorhandler(Exception)", source)
 
     @unittest.skipUnless(FLASK_AVAILABLE, "Flask is niet lokaal geïnstalleerd")
     def test_dashboard_and_detail_pages_render(self) -> None:
