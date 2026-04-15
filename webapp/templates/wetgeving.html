@@ -21,6 +21,10 @@
   <div class="notice error">Selecteer eerst een bestand om te uploaden.</div>
   {% elif upload_status == 'ongeldig_bestand' %}
   <div class="notice error">Bestandstype niet ondersteund. Gebruik pdf, docx, txt of md.</div>
+  {% elif upload_status == 'ongeldige_url' %}
+  <div class="notice error">URL niet geldig. Gebruik een http- of https-link naar een officiële bron.</div>
+  {% elif upload_status == 'url_import_mislukt' %}
+  <div class="notice error">URL kon niet worden opgehaald of verwerkt.</div>
   {% elif upload_status == 'extractie_mislukt' %}
   <div class="notice error">Tekstextractie mislukt. Controleer het document of probeer een tekstversie.</div>
   {% endif %}

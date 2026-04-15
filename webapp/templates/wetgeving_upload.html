@@ -11,9 +11,13 @@
   </div>
 
   <form method="post" enctype="multipart/form-data" class="upload-grid">
+    <label class="full-width">
+      <span>Bron-URL</span>
+      <input type="url" name="bron_url" placeholder="Plak hier een officiële URL naar wetgeving of een PDF. Laat leeg als je een bestand uploadt.">
+    </label>
     <label>
       <span>Bestand</span>
-      <input type="file" name="bestand" accept=".pdf,.docx,.txt,.md" required>
+      <input type="file" name="bestand" accept=".pdf,.docx,.txt,.md">
     </label>
     <label>
       <span>Titel</span>

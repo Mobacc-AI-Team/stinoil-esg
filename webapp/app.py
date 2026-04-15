@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import mimetypes
 from collections import defaultdict
 from datetime import datetime, timezone
 from dataclasses import dataclass
@@ -9,6 +10,9 @@ from functools import lru_cache
 from html import escape
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import urlparse
+
+import requests
 from flask import Flask, abort, redirect, render_template, request, url_for
 
 from chatgpt_export_to_kb import format_yaml_list, slugify, yaml_escape
@@ -27,6 +31,7 @@ except Exception:  # noqa: BLE001
 WEBAPP_DIR = Path(__file__).resolve().parent
 DEFAULT_KB_ROOT = WEBAPP_DIR.parent / "ChemieComplianceKennisbank"
 RUNTIME_KB_ROOT = Path("/tmp") / "ChemieComplianceKennisbank"
+URL_ALLOWED_SCHEMES = {"http", "https"}
 FRONTMATTER_DELIMITER = "---"
 SECTION_MAP = {
     "wetgeving": "01_Wetgeving",
@@ -188,6 +193,28 @@ def create_app() -> Flask:
     @app.route("/wetgeving/upload", methods=["GET", "POST"])
     def wetgeving_upload() -> str:
         if request.method == "POST":
+            bron_url = request.form.get("bron_url", "").strip()
+            if bron_url:
+                try:
+                    create_regulation_record_from_url(
+                        kb_root=kb_root,
+                        source_url=bron_url,
+                        title=request.form.get("titel", "").strip(),
+                        jurisdiction=request.form.get("jurisdictie", "").strip(),
+                        subject=request.form.get("onderwerp", "").strip(),
+                        tags=request.form.get("tags", "").strip(),
+                        categories=request.form.get("categorieen", "").strip(),
+                        source_label=request.form.get("bron", "").strip(),
+                    )
+                except ValueError:
+                    return redirect(url_for("wetgeving", status="ongeldige_url"))
+                except RuntimeError:
+                    return redirect(url_for("wetgeving", status="url_import_mislukt"))
+
+                load_documents.cache_clear()
+                safe_build_indexes(kb_root)
+                return redirect(url_for("wetgeving", status="toegevoegd"))
+
             upload = request.files.get("bestand")
             if upload is None or not upload.filename:
                 return redirect(url_for("wetgeving", status="geen_bestand"))
@@ -593,6 +620,38 @@ def create_regulation_record_from_upload(
     return regulation_path
 
 
+def create_regulation_record_from_url(
+    kb_root: Path,
+    source_url: str,
+    title: str,
+    jurisdiction: str,
+    subject: str,
+    tags: str,
+    categories: str,
+    source_label: str,
+) -> Path:
+    parsed = urlparse(source_url)
+    if parsed.scheme not in URL_ALLOWED_SCHEMES:
+        raise ValueError("Alleen http/https URLs zijn toegestaan")
+
+    response = requests.get(source_url, timeout=30)
+    response.raise_for_status()
+    content_type = response.headers.get("content-type", "text/html").split(";", 1)[0].strip()
+    suffix = infer_suffix_from_response(content_type, parsed.path)
+    upload_name = f"{slugify(title or Path(parsed.path).stem or 'wetgeving_url')}{suffix}"
+    return create_regulation_record_from_upload(
+        kb_root=kb_root,
+        upload_name=upload_name,
+        binary_content=response.content,
+        title=title,
+        jurisdiction=jurisdiction,
+        subject=subject,
+        tags=tags,
+        categories=categories,
+        source_label=source_label or source_url,
+    )
+
+
 def create_case_from_form(
     kb_root: Path,
     afzender_type: str,
@@ -836,6 +895,17 @@ def write_temp_upload(upload_name: str, upload_content: bytes) -> Path:
     path = unique_path(temp_dir / f"preview{suffix}")
     path.write_bytes(upload_content)
     return path
+
+
+def infer_suffix_from_response(content_type: str, path: str) -> str:
+    if "pdf" in content_type:
+        return ".pdf"
+    if "wordprocessingml" in content_type:
+        return ".docx"
+    if "html" in content_type:
+        return ".html"
+    suffix = Path(path).suffix.lower()
+    return suffix or ".txt"
 
 
 def encode_hidden_bytes(value: bytes) -> str:
