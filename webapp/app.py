@@ -26,6 +26,7 @@ except Exception:  # noqa: BLE001
 
 WEBAPP_DIR = Path(__file__).resolve().parent
 DEFAULT_KB_ROOT = WEBAPP_DIR.parent / "ChemieComplianceKennisbank"
+RUNTIME_KB_ROOT = Path("/tmp") / "ChemieComplianceKennisbank"
 FRONTMATTER_DELIMITER = "---"
 SECTION_MAP = {
     "wetgeving": "01_Wetgeving",
@@ -126,7 +127,7 @@ def create_app() -> Flask:
         template_folder=str(WEBAPP_DIR / "templates"),
         static_folder=None,
     )
-    kb_root = Path(os.environ.get("KB_ROOT", DEFAULT_KB_ROOT)).expanduser().resolve()
+    kb_root = resolve_kb_root()
     app.config["KB_ROOT"] = kb_root
 
     @app.errorhandler(Exception)
@@ -323,6 +324,59 @@ def load_documents(kb_root: Path) -> tuple[DocumentRecord, ...]:
     for path in sorted(kb_root.glob("**/*.md")):
         records.append(document_from_file(kb_root, path))
     return tuple(records)
+
+
+def resolve_kb_root() -> Path:
+    configured = os.environ.get("KB_ROOT")
+    if configured:
+        target = Path(configured).expanduser().resolve()
+        if target.exists() or ensure_writable_directory(target):
+            return target
+
+    default_root = DEFAULT_KB_ROOT.resolve()
+    if is_writable_path(default_root):
+        ensure_writable_directory(default_root)
+        return default_root
+
+    runtime_root = RUNTIME_KB_ROOT
+    ensure_writable_directory(runtime_root)
+    bootstrap_runtime_kb(default_root, runtime_root)
+    return runtime_root
+
+
+def is_writable_path(path: Path) -> bool:
+    parent = path if path.exists() and path.is_dir() else path.parent
+    try:
+        parent.mkdir(parents=True, exist_ok=True)
+        probe = parent / ".write_test"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+        return True
+    except OSError:
+        return False
+
+
+def ensure_writable_directory(path: Path) -> bool:
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        return is_writable_path(path)
+    except OSError:
+        return False
+
+
+def bootstrap_runtime_kb(source_root: Path, runtime_root: Path) -> None:
+    if any(runtime_root.iterdir()):
+        return
+    if not source_root.exists():
+        return
+    for path in source_root.glob("**/*"):
+        relative = path.relative_to(source_root)
+        target = runtime_root / relative
+        if path.is_dir():
+            target.mkdir(parents=True, exist_ok=True)
+        elif path.is_file():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(path.read_bytes())
 
 
 def document_from_file(kb_root: Path, path: Path) -> DocumentRecord:
