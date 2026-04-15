@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 
 import psycopg
 import requests
-from flask import Flask, abort, redirect, render_template, request, url_for
+from flask import Flask, abort, g, redirect, render_template, request, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from chatgpt_export_to_kb import format_yaml_list, slugify, yaml_escape
@@ -150,6 +150,10 @@ def create_app() -> Flask:
     if app.config["DATABASE_URL"]:
         ensure_database_schema(app.config["DATABASE_URL"])
 
+    @app.before_request
+    def load_user_into_context() -> None:
+        g.current_user = get_current_user(app.config["DATABASE_URL"])
+
     @app.errorhandler(Exception)
     def handle_exception(exc: Exception):  # type: ignore[override]
         return (
@@ -161,12 +165,20 @@ def create_app() -> Flask:
             500,
         )
 
+    @app.errorhandler(401)
+    def handle_unauthorized(_exc):  # type: ignore[override]
+        return redirect(url_for("login", next=request.path))
+
+    @app.errorhandler(403)
+    def handle_forbidden(_exc):  # type: ignore[override]
+        return render_template("forbidden.html"), 403
+
     @app.context_processor
     def inject_globals() -> dict[str, object]:
         return {
             "kb_root": kb_root,
             "section_options": list(SECTION_MAP.items()),
-            "current_user": get_current_user(app.config["DATABASE_URL"]),
+            "current_user": getattr(g, "current_user", None),
         }
 
     @app.route("/login", methods=["GET", "POST"])
@@ -178,6 +190,9 @@ def create_app() -> Flask:
             if user is None:
                 return render_template("login.html", error="Ongeldige inloggegevens.")
             session_set_user(user)
+            next_url = request.args.get("next", "").strip()
+            if next_url.startswith("/"):
+                return redirect(next_url)
             return redirect(url_for("dashboard"))
         return render_template("login.html", error="")
 
@@ -188,6 +203,7 @@ def create_app() -> Flask:
 
     @app.route("/")
     def dashboard() -> str:
+        require_login(app.config["DATABASE_URL"])
         documents = load_documents(kb_root)
         stats = build_dashboard_stats(documents)
         recent_questions = [doc for doc in documents if doc.section_key == "vragen"][-8:]
@@ -211,6 +227,7 @@ def create_app() -> Flask:
 
     @app.route("/wetgeving")
     def wetgeving() -> str:
+        require_login(app.config["DATABASE_URL"])
         query = request.args.get("q", "").strip()
         documents = [doc for doc in load_documents(kb_root) if doc.section_key == "wetgeving"]
         if query:
@@ -225,6 +242,7 @@ def create_app() -> Flask:
 
     @app.route("/wetgeving/upload", methods=["GET", "POST"])
     def wetgeving_upload() -> str:
+        require_role(app.config["DATABASE_URL"], {"admin", "editor"})
         if request.method == "POST":
             bron_url = request.form.get("bron_url", "").strip()
             if bron_url:
@@ -277,6 +295,7 @@ def create_app() -> Flask:
 
     @app.route("/casussen")
     def casussen() -> str:
+        require_login(app.config["DATABASE_URL"])
         filters = SearchFilters(
             query=request.args.get("q", "").strip(),
             section=request.args.get("section", "vragen").strip(),
@@ -299,6 +318,7 @@ def create_app() -> Flask:
 
     @app.route("/casussen/nieuw", methods=["GET", "POST"])
     def nieuwe_casus() -> str:
+        require_role(app.config["DATABASE_URL"], {"admin", "editor"})
         ensure_case_directories(kb_root)
         if request.method == "POST":
             try:
@@ -342,12 +362,14 @@ def create_app() -> Flask:
 
     @app.route("/taxonomie")
     def taxonomie() -> str:
+        require_login(app.config["DATABASE_URL"])
         documents = load_documents(kb_root)
         tree = build_taxonomy_tree(documents)
         return render_template("taxonomie.html", taxonomy=tree)
 
     @app.route("/zoek")
     def zoek() -> str:
+        require_login(app.config["DATABASE_URL"])
         filters = SearchFilters(
             query=request.args.get("q", "").strip(),
             section=request.args.get("section", "").strip(),
@@ -361,6 +383,7 @@ def create_app() -> Flask:
 
     @app.route("/document/<path:rel_path>")
     def document_detail(rel_path: str) -> str:
+        require_login(app.config["DATABASE_URL"])
         safe_rel = Path(rel_path)
         target = (kb_root / safe_rel).resolve()
         if kb_root not in [target, *target.parents] or not target.is_file():
