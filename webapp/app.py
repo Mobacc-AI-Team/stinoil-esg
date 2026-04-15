@@ -201,6 +201,22 @@ def create_app() -> Flask:
         session_clear_user()
         return redirect(url_for("login"))
 
+    @app.route("/setup-admin")
+    def setup_admin() -> str:
+        if os.environ.get("ALLOW_ADMIN_BOOTSTRAP", "false").lower() != "true":
+            abort(404)
+        ensure_admin_user(
+            app.config["DATABASE_URL"],
+            email="compliance@stinoil.com",
+            password=os.environ.get("DEFAULT_ADMIN_PASSWORD", "ChangeMe123!"),
+            role="admin",
+            display_name="Compliance Beheer",
+        )
+        return render_template(
+            "bootstrap_done.html",
+            email="compliance@stinoil.com",
+        )
+
     @app.route("/")
     def dashboard() -> str:
         require_login(app.config["DATABASE_URL"])
@@ -869,6 +885,27 @@ def seed_default_users(cur: Any) -> None:
         "INSERT INTO app_users (email, password_hash, role, display_name) VALUES (%s, %s, %s, %s)",
         users,
     )
+
+
+def ensure_admin_user(database_url: str, email: str, password: str, role: str, display_name: str) -> None:
+    conn = get_db_connection(database_url)
+    if conn is None:
+        raise RuntimeError("Database niet beschikbaar")
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM app_users WHERE email = %s", (email,))
+            row = cur.fetchone()
+            password_hash = generate_password_hash(password)
+            if row is None:
+                cur.execute(
+                    "INSERT INTO app_users (email, password_hash, role, display_name) VALUES (%s, %s, %s, %s)",
+                    (email, password_hash, role, display_name),
+                )
+            else:
+                cur.execute(
+                    "UPDATE app_users SET password_hash = %s, role = %s, display_name = %s WHERE email = %s",
+                    (password_hash, role, display_name, email),
+                )
 
 
 def authenticate_user(database_url: str, email: str, password: str) -> AuthUser | None:

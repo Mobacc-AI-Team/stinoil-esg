@@ -61,6 +61,7 @@ class FlaskInterfaceTests(unittest.TestCase):
         self.assertIn("from flask import Flask", source)
         self.assertIn("@app.route(\"/\")", source)
         self.assertIn("@app.route(\"/login\", methods=[\"GET\", \"POST\"])", source)
+        self.assertIn("@app.route(\"/setup-admin\")", source)
         self.assertIn("@app.route(\"/wetgeving\")", source)
         self.assertIn("@app.route(\"/casussen\")", source)
         self.assertIn("@app.route(\"/casussen/nieuw\", methods=[\"GET\", \"POST\"])", source)
