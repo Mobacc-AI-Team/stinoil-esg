@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Login · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card form-shell narrow-shell">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Login</div>
+      <h2>Inloggen</h2>
+      <p>Log in om de centrale kennisbank te gebruiken.</p>
+    </div>
+  </div>
+  {% if error %}
+  <div class="notice error">{{ error }}</div>
+  {% endif %}
+  <form method="post" class="upload-grid single-column">
+    <label>
+      <span>E-mailadres</span>
+      <input type="email" name="email" required>
+    </label>
+    <label>
+      <span>Wachtwoord</span>
+      <input type="password" name="password" required>
+    </label>
+    <div class="form-actions">
+      <button type="submit">Inloggen</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

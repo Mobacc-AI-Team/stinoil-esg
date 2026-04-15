@@ -15,6 +15,7 @@
           <p class="site-subtitle">Wetgeving, casuïstiek en uniforme antwoorden per locatie.</p>
         </div>
         <nav class="main-nav">
+          {% if current_user %}
           <a href="{{ url_for('dashboard') }}">Dashboard</a>
           <a href="{{ url_for('wetgeving') }}">Wetgeving</a>
           <a href="{{ url_for('wetgeving_upload') }}">Upload wetgeving</a>
@@ -22,6 +23,10 @@
           <a href="{{ url_for('nieuwe_casus') }}">Nieuwe vraag</a>
           <a href="{{ url_for('casussen') }}">Casussen</a>
           <a href="{{ url_for('zoek') }}">Zoeken</a>
+          <a href="{{ url_for('logout') }}">Uitloggen</a>
+          {% else %}
+          <a href="{{ url_for('login') }}">Login</a>
+          {% endif %}
         </nav>
       </div>
     </header>

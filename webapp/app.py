@@ -9,11 +9,13 @@ from dataclasses import dataclass
 from functools import lru_cache
 from html import escape
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 from urllib.parse import urlparse
 
+import psycopg
 import requests
 from flask import Flask, abort, redirect, render_template, request, url_for
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from chatgpt_export_to_kb import format_yaml_list, slugify, yaml_escape
 
@@ -126,14 +128,27 @@ class IntakePreview:
     related_documents: list[dict[str, object]]
 
 
+@dataclass
+class AuthUser:
+    user_id: int
+    email: str
+    role: str
+    display_name: str
+
+
 def create_app() -> Flask:
     app = Flask(
         __name__,
         template_folder=str(WEBAPP_DIR / "templates"),
         static_folder=None,
     )
+    app.secret_key = os.environ.get("APP_SECRET_KEY", "dev-secret-change-me")
     kb_root = resolve_kb_root()
     app.config["KB_ROOT"] = kb_root
+    app.config["DATABASE_URL"] = os.environ.get("POSTGRES_URL") or os.environ.get("DATABASE_URL", "").strip()
+
+    if app.config["DATABASE_URL"]:
+        ensure_database_schema(app.config["DATABASE_URL"])
 
     @app.errorhandler(Exception)
     def handle_exception(exc: Exception):  # type: ignore[override]
@@ -151,7 +166,25 @@ def create_app() -> Flask:
         return {
             "kb_root": kb_root,
             "section_options": list(SECTION_MAP.items()),
+            "current_user": get_current_user(app.config["DATABASE_URL"]),
         }
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login() -> str:
+        if request.method == "POST":
+            email = request.form.get("email", "").strip().lower()
+            password = request.form.get("password", "")
+            user = authenticate_user(app.config["DATABASE_URL"], email, password)
+            if user is None:
+                return render_template("login.html", error="Ongeldige inloggegevens.")
+            session_set_user(user)
+            return redirect(url_for("dashboard"))
+        return render_template("login.html", error="")
+
+    @app.route("/logout")
+    def logout() -> str:
+        session_clear_user()
+        return redirect(url_for("login"))
 
     @app.route("/")
     def dashboard() -> str:
@@ -771,6 +804,97 @@ def safe_build_indexes(kb_root: Path) -> None:
         build_indexes(kb_root)
     except Exception:
         return
+
+
+def get_db_connection(database_url: str):
+    if not database_url:
+        return None
+    return psycopg.connect(database_url)
+
+
+def ensure_database_schema(database_url: str) -> None:
+    conn = get_db_connection(database_url)
+    if conn is None:
+        return
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS app_users (
+                    id SERIAL PRIMARY KEY,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role TEXT NOT NULL DEFAULT 'viewer',
+                    display_name TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+                """
+            )
+            cur.execute("SELECT COUNT(*) FROM app_users")
+            if cur.fetchone()[0] == 0:
+                seed_default_users(cur)
+
+
+def seed_default_users(cur: Any) -> None:
+    default_password = os.environ.get("DEFAULT_ADMIN_PASSWORD", "ChangeMe123!")
+    users = [
+        ("admin@example.com", generate_password_hash(default_password), "admin", "Admin"),
+        ("editor@example.com", generate_password_hash(default_password), "editor", "Editor"),
+        ("viewer@example.com", generate_password_hash(default_password), "viewer", "Viewer"),
+    ]
+    cur.executemany(
+        "INSERT INTO app_users (email, password_hash, role, display_name) VALUES (%s, %s, %s, %s)",
+        users,
+    )
+
+
+def authenticate_user(database_url: str, email: str, password: str) -> AuthUser | None:
+    conn = get_db_connection(database_url)
+    if conn is None:
+        return None
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, email, password_hash, role, display_name FROM app_users WHERE email = %s",
+                (email,),
+            )
+            row = cur.fetchone()
+            if row is None or not check_password_hash(row[2], password):
+                return None
+            return AuthUser(user_id=row[0], email=row[1], role=row[3], display_name=row[4])
+
+
+def get_current_user(database_url: str) -> AuthUser | None:
+    from flask import session
+
+    user_id = session.get("user_id")
+    if not user_id or not database_url:
+        return None
+    conn = get_db_connection(database_url)
+    if conn is None:
+        return None
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, email, role, display_name FROM app_users WHERE id = %s",
+                (user_id,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            return AuthUser(user_id=row[0], email=row[1], role=row[2], display_name=row[3])
+
+
+def session_set_user(user: AuthUser) -> None:
+    from flask import session
+
+    session["user_id"] = user.user_id
+
+
+def session_clear_user() -> None:
+    from flask import session
+
+    session.pop("user_id", None)
 
 
 def build_case_preview(

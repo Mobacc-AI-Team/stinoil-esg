@@ -25,6 +25,12 @@ a:hover { text-decoration: underline; }
   width: min(1200px, calc(100% - 32px));
   margin: 0 auto;
 }
+.narrow-shell {
+  max-width: 620px;
+}
+.single-column {
+  grid-template-columns: 1fr;
+}
 
 .site-header {
   background: linear-gradient(135deg, var(--ink), var(--brand-dark));
