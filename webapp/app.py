@@ -183,6 +183,8 @@ def create_app() -> Flask:
 
     @app.route("/login", methods=["GET", "POST"])
     def login() -> str:
+        if not app.config["DATABASE_URL"]:
+            return render_template("login.html", error="Database is nog niet geconfigureerd. Voeg POSTGRES_URL of DATABASE_URL toe in Vercel.")
         if request.method == "POST":
             email = request.form.get("email", "").strip().lower()
             password = request.form.get("password", "")
@@ -205,6 +207,12 @@ def create_app() -> Flask:
     def setup_admin() -> str:
         if os.environ.get("ALLOW_ADMIN_BOOTSTRAP", "false").lower() != "true":
             abort(404)
+        if not app.config["DATABASE_URL"]:
+            return render_template(
+                "bootstrap_done.html",
+                email="compliance@stinoil.com",
+                message="Database niet geconfigureerd. Voeg eerst POSTGRES_URL of DATABASE_URL toe in Vercel.",
+            )
         ensure_admin_user(
             app.config["DATABASE_URL"],
             email="compliance@stinoil.com",
@@ -215,6 +223,7 @@ def create_app() -> Flask:
         return render_template(
             "bootstrap_done.html",
             email="compliance@stinoil.com",
+            message="Het beheeraccount is ingesteld. Je kunt nu inloggen.",
         )
 
     @app.route("/")
