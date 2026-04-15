@@ -90,6 +90,7 @@ class FlaskInterfaceTests(unittest.TestCase):
             new_case = client.get("/casussen/nieuw")
             self.assertEqual(new_case.status_code, 200)
             self.assertIn("Nieuwe vraag", new_case.get_data(as_text=True))
+            self.assertIn("Analyseer eerst", new_case.get_data(as_text=True))
 
             wetgeving = client.get("/wetgeving")
             self.assertEqual(wetgeving.status_code, 200)

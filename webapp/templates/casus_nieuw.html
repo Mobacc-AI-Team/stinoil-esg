@@ -54,22 +54,9 @@
     <div class="full-width intake-note card subtle-card">
       <strong>Werking</strong>
       <p>Je kunt tekst plakken, een document uploaden of beide combineren. Het systeem maakt daarna automatisch een vraag, beoordeling en conceptantwoord aan en stelt categorieën en relevante wetgeving voor.</p>
-    </label>
-    <div class="form-actions">
-      {% if preview %}
-      <input type="hidden" name="actie" value="opslaan">
-      <input type="hidden" name="upload_name" value="{{ form_values.get('upload_name', '') }}">
-      <input type="hidden" name="upload_content" value="{{ form_values.get('upload_content', '') }}">
-      <button type="submit">Definitief opslaan</button>
-      {% else %}
-      <input type="hidden" name="actie" value="preview">
-      <button type="submit">Analyseer eerst</button>
-      {% endif %}
     </div>
-  </form>
-
-  {% if preview %}
-  <section class="preview-panel card subtle-card">
+    {% if preview %}
+    <section class="preview-panel card subtle-card full-width">
     <div class="card-head">
       <h3>Analysevoorstel</h3>
       <span class="pill">Controleer voor opslaan</span>
@@ -137,7 +124,20 @@
       <strong>Geanalyseerde intake</strong>
       <textarea class="preview-textarea" name="preview_intake_text" rows="12">{{ preview.intake_text }}</textarea>
     </div>
-  </section>
-  {% endif %}
+    </section>
+    {% endif %}
+
+    <div class="form-actions full-width">
+      {% if preview %}
+      <input type="hidden" name="actie" value="opslaan">
+      <input type="hidden" name="upload_name" value="{{ form_values.get('upload_name', '') }}">
+      <input type="hidden" name="upload_content" value="{{ form_values.get('upload_content', '') }}">
+      <button type="submit">Definitief opslaan</button>
+      {% else %}
+      <input type="hidden" name="actie" value="preview">
+      <button type="submit">Analyseer eerst</button>
+      {% endif %}
+    </div>
+  </form>
 </section>
 {% endblock %}

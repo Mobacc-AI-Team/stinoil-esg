@@ -9,8 +9,6 @@ from functools import lru_cache
 from html import escape
 from pathlib import Path
 from typing import Iterable
-from collections import Counter
-
 from flask import Flask, abort, redirect, render_template, request, url_for
 
 from chatgpt_export_to_kb import build_indexes, format_yaml_list, slugify, yaml_escape
