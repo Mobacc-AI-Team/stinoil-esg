@@ -908,6 +908,19 @@ def get_current_user(database_url: str) -> AuthUser | None:
             return AuthUser(user_id=row[0], email=row[1], role=row[2], display_name=row[3])
 
 
+def require_login(database_url: str) -> None:
+    if get_current_user(database_url) is None:
+        abort(401)
+
+
+def require_role(database_url: str, allowed_roles: set[str]) -> None:
+    user = get_current_user(database_url)
+    if user is None:
+        abort(401)
+    if user.role not in allowed_roles:
+        abort(403)
+
+
 def session_set_user(user: AuthUser) -> None:
     from flask import session
 
