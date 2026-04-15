@@ -861,7 +861,7 @@ def ensure_database_schema(database_url: str) -> None:
 def seed_default_users(cur: Any) -> None:
     default_password = os.environ.get("DEFAULT_ADMIN_PASSWORD", "ChangeMe123!")
     users = [
-        ("admin@example.com", generate_password_hash(default_password), "admin", "Admin"),
+        ("compliance@stinoil.com", generate_password_hash(default_password), "admin", "Compliance Beheer"),
         ("editor@example.com", generate_password_hash(default_password), "editor", "Editor"),
         ("viewer@example.com", generate_password_hash(default_password), "viewer", "Viewer"),
     ]
