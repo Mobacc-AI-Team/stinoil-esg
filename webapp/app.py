@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Iterable
 from flask import Flask, abort, redirect, render_template, request, url_for
 
-from chatgpt_export_to_kb import build_indexes, format_yaml_list, slugify, yaml_escape
+from chatgpt_export_to_kb import format_yaml_list, slugify, yaml_escape
 
 try:
     from docx import Document as DocxDocument
@@ -198,7 +198,7 @@ def create_app() -> Flask:
                 return redirect(url_for("wetgeving", status="extractie_mislukt"))
 
             load_documents.cache_clear()
-            build_indexes(kb_root)
+            safe_build_indexes(kb_root)
             return redirect(url_for("wetgeving", status="toegevoegd"))
 
         return render_template("wetgeving_upload.html")
@@ -263,7 +263,7 @@ def create_app() -> Flask:
                 return redirect(url_for("casussen", status="ongeldige_invoer"))
 
             load_documents.cache_clear()
-            build_indexes(kb_root)
+            safe_build_indexes(kb_root)
             return redirect(url_for("casussen", status="toegevoegd", section="vragen"))
 
         return render_template("casus_nieuw.html", preview=None, form_values={})
@@ -636,6 +636,17 @@ def create_case_from_form(
     )
 
     return vraag_path, beoordeling_path, antwoord_path
+
+
+def safe_build_indexes(kb_root: Path) -> None:
+    try:
+        from chatgpt_export_to_kb import build_indexes
+    except Exception:
+        return
+    try:
+        build_indexes(kb_root)
+    except Exception:
+        return
 
 
 def build_case_preview(
