@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 import psycopg
 import requests
 from flask import Flask, abort, g, redirect, render_template, request, url_for
+from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from chatgpt_export_to_kb import format_yaml_list, slugify, yaml_escape
@@ -140,7 +141,8 @@ def create_app() -> Flask:
     app = Flask(
         __name__,
         template_folder=str(WEBAPP_DIR / "templates"),
-        static_folder=None,
+        static_folder=str(WEBAPP_DIR.parent / "public"),
+        static_url_path="",
     )
     app.secret_key = os.environ.get("APP_SECRET_KEY", "dev-secret-change-me")
     kb_root = resolve_kb_root()
@@ -156,6 +158,8 @@ def create_app() -> Flask:
 
     @app.errorhandler(Exception)
     def handle_exception(exc: Exception):  # type: ignore[override]
+        if isinstance(exc, HTTPException):
+            return exc
         return (
             render_template(
                 "error.html",
@@ -398,7 +402,8 @@ def create_app() -> Flask:
 
                 if action == "preview":
                     preview = build_case_preview(kb_root=kb_root, **form_payload)
-                    return render_template("casus_nieuw.html", preview=preview, form_values=form_payload)
+                    template_values = {**form_payload, "upload_content": encode_hidden_bytes(form_payload["upload_content"])}
+                    return render_template("casus_nieuw.html", preview=preview, form_values=template_values)
 
                 form_payload["titel"] = request.form.get("preview_titel", form_payload["titel"]).strip()
                 form_payload["afzender_type"] = request.form.get("preview_afzender_type", form_payload["afzender_type"]).strip()
@@ -735,6 +740,14 @@ def create_regulation_record_from_upload(
     return regulation_path
 
 
+def strip_html_to_text(html: str) -> str:
+    text = re.sub(r"<(script|style)[^>]*>.*?</\1>", "", html, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
 def create_regulation_record_from_url(
     kb_root: Path,
     source_url: str,
@@ -753,11 +766,17 @@ def create_regulation_record_from_url(
     response.raise_for_status()
     content_type = response.headers.get("content-type", "text/html").split(";", 1)[0].strip()
     suffix = infer_suffix_from_response(content_type, parsed.path)
+
+    if "html" in content_type:
+        binary_content = strip_html_to_text(response.text).encode("utf-8")
+    else:
+        binary_content = response.content
+
     upload_name = f"{slugify(title or Path(parsed.path).stem or 'wetgeving_url')}{suffix}"
     return create_regulation_record_from_upload(
         kb_root=kb_root,
         upload_name=upload_name,
-        binary_content=response.content,
+        binary_content=binary_content,
         title=title,
         jurisdiction=jurisdiction,
         subject=subject,
@@ -891,7 +910,10 @@ def safe_build_indexes(kb_root: Path) -> None:
 def get_db_connection(database_url: str):
     if not database_url:
         return None
-    return psycopg.connect(database_url)
+    try:
+        return psycopg.connect(database_url)
+    except Exception:
+        return None
 
 
 def ensure_database_schema(database_url: str) -> None:
@@ -1147,9 +1169,11 @@ def infer_suffix_from_response(content_type: str, path: str) -> str:
     if "wordprocessingml" in content_type:
         return ".docx"
     if "html" in content_type:
-        return ".html"
+        return ".txt"
     suffix = Path(path).suffix.lower()
-    return suffix or ".txt"
+    if suffix in ALLOWED_UPLOAD_EXTENSIONS:
+        return suffix
+    return ".txt"
 
 
 def encode_hidden_bytes(value: bytes) -> str:
