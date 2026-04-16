@@ -1493,6 +1493,10 @@ def normalize_jurisdiction(value: str) -> str:
     return "nationaal"
 
 
+def relative_path(kb_root: Path, path: Path) -> str:
+    return str(path.relative_to(kb_root)).replace("\\", "/")
+
+
 def unique_path(path: Path) -> Path:
     if not path.exists():
         return path
