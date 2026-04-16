@@ -8,30 +8,50 @@
       <h2>Doorzoek de volledige kennisbank</h2>
     </div>
     <form method="get" class="filters-grid">
-      <input type="text" name="q" value="{{ filters.query }}" placeholder="Zoekterm">
+      <input type="text" name="q" value="{{ filters.query }}" placeholder="Zoekterm (bijv. CLP, opslag, transport)">
       <select name="section">
-        <option value="">Alle secties</option>
-        {% for key, folder in section_options %}
-        <option value="{{ key }}" {% if filters.section == key %}selected{% endif %}>{{ key }}</option>
-        {% endfor %}
+        <option value="" {% if not filters.section %}selected{% endif %}>Alle secties</option>
+        <option value="wetgeving"     {% if filters.section == 'wetgeving' %}selected{% endif %}>Wetgeving & normen</option>
+        <option value="vragen"        {% if filters.section == 'vragen' %}selected{% endif %}>Vragen</option>
+        <option value="beoordelingen" {% if filters.section == 'beoordelingen' %}selected{% endif %}>Beoordelingen</option>
+        <option value="antwoorden"    {% if filters.section == 'antwoorden' %}selected{% endif %}>Antwoorden</option>
+        <option value="locaties"      {% if filters.section == 'locaties' %}selected{% endif %}>Locaties</option>
       </select>
-      <input type="text" name="tag" value="{{ filters.tag }}" placeholder="Tag">
+      <input type="text" name="tag" value="{{ filters.tag }}" placeholder="Tag (bijv. clp, reach, pgs15)">
       <input type="text" name="category" value="{{ filters.category }}" placeholder="Categorie">
-      <input type="text" name="location" value="{{ filters.location }}" placeholder="Locatie">
-      <input type="text" name="status" value="{{ filters.status }}" placeholder="Status">
       <button type="submit">Zoeken</button>
     </form>
   </div>
 
+  {% if filters.query or filters.tag or filters.category %}
+  <div class="search-meta muted" style="padding:8px 0 4px;font-size:.88rem">
+    {% if documents %}
+      {{ documents | length }} resultaat{{ 'en' if documents | length != 1 }} gevonden
+      {% if filters.query %}voor <strong>{{ filters.query }}</strong>{% endif %}
+    {% else %}
+      Geen resultaten gevonden
+      {% if filters.query %}voor <strong>{{ filters.query }}</strong>{% endif %}.
+      Probeer een andere zoekterm of sectie.
+    {% endif %}
+  </div>
+  {% endif %}
+
   <ul class="search-results">
     {% for doc in documents %}
     <li class="card compact-card">
-      <div class="case-meta">{{ doc.section_label }} · {{ doc.rel_path }}</div>
+      <div class="case-meta">
+        {{ doc.section_label }}
+        {% for tag in doc.tags[:3] %}<span class="pill subtle" style="font-size:.75rem">{{ tag }}</span>{% endfor %}
+      </div>
       <h3><a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a></h3>
-      <p>{{ doc.metadata.get('samenvatting', doc.body[:220]) }}</p>
+      <p>{{ doc.metadata.get('samenvatting', doc.body[:200]) }}</p>
     </li>
     {% else %}
-    <li>Geen documenten gevonden.</li>
+    {% if filters.query or filters.tag or filters.category %}
+    <li class="muted" style="padding:16px 0">Geen documenten gevonden. Probeer een bredere zoekterm.</li>
+    {% else %}
+    <li class="muted" style="padding:16px 0">Voer een zoekterm in om de kennisbank te doorzoeken.</li>
+    {% endif %}
     {% endfor %}
   </ul>
 </section>

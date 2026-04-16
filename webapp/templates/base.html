@@ -20,13 +20,12 @@
         <nav class="main-nav">
           <a href="{{ url_for('wetgeving') }}">Wetgeving</a>
           <a href="{{ url_for('wetgeving_upload') }}">Upload</a>
-          <a href="{{ url_for('wetgeving_importeer') }}">Importeer register</a>
+          <a href="{{ url_for('wetgeving_importeer') }}">Importeer</a>
           <a href="{{ url_for('nieuwe_casus') }}">Nieuwe vraag</a>
           <a href="{{ url_for('casussen') }}">Casussen</a>
           <a href="{{ url_for('zoek') }}">Zoeken</a>
           {% if current_user %}
-          <a href="{{ url_for('taxonomie') }}">Taxonomie</a>
-          <a href="{{ url_for('logout') }}">Uitloggen ({{ current_user.display_name }})</a>
+          <a href="{{ url_for('logout') }}">Uitloggen</a>
           {% elif database_configured %}
           <a href="{{ url_for('login') }}">Inloggen</a>
           {% endif %}
