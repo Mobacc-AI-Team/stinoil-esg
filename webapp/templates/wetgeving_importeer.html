@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Importeer wetgevingsregister · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card form-shell wide-shell">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Importeer</div>
+      <h2>Wetgevingsregister importeren</h2>
+      <p>Selecteer welke wetgeving je wilt toevoegen. Kies per item of je de officiële URL wil ophalen of een eigen document wil uploaden.</p>
+    </div>
+  </div>
+
+  {% if results %}
+  <div class="import-results card subtle-card">
+    <h3>Resultaat</h3>
+    <ul class="import-result-list">
+      {% for r in results %}
+      <li class="import-result-item {{ r.status }}">
+        <strong>{{ r.naam }}</strong>
+        <span class="pill {% if r.status == 'ok' %}success{% elif r.status == 'fout' %}error{% else %}muted{% endif %}">
+          {{ r.status }}
+        </span>
+        <span class="muted">{{ r.bericht }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="form-actions">
+      <a class="button-link" href="{{ url_for('wetgeving') }}">Naar wetgevingsbibliotheek →</a>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not results %}
+  <form method="post" enctype="multipart/form-data">
+
+    {% set themas = register | map(attribute='thema') | unique | list %}
+    {% for thema in themas %}
+    <div class="import-group">
+      <div class="import-group-header">
+        <span class="pill subtle">{{ thema | upper }}</span>
+      </div>
+      {% for i in range(register | length) %}
+      {% set item = register[i] %}
+      {% if item.thema == thema %}
+      <div class="import-row {% if existing_slugs and item.naam | lower | replace(' ', '_') | replace('/', '_') in existing_slugs %}already-imported{% endif %}">
+        <label class="import-checkbox">
+          <input type="checkbox" name="item_{{ i }}" value="1"
+            {% if existing_slugs and item.naam | lower | replace(' ', '_') in existing_slugs %}disabled{% endif %}>
+          <div class="import-row-info">
+            <strong>{{ item.naam }}</strong>
+            <span class="muted">{{ item.type }}</span>
+          </div>
+        </label>
+        <div class="import-method-toggle">
+          <label class="method-option">
+            <input type="radio" name="method_{{ i }}" value="url" checked>
+            <span>URL ophalen</span>
+          </label>
+          <label class="method-option">
+            <input type="radio" name="method_{{ i }}" value="upload">
+            <span>Document uploaden</span>
+          </label>
+        </div>
+        <div class="import-url muted">
+          <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url | truncate(60) }}</a>
+        </div>
+        <div class="import-upload-field" style="display:none;">
+          <input type="file" name="bestand_{{ i }}" accept=".pdf,.docx,.txt,.md">
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+    <div class="form-actions full-width">
+      <button type="submit">Geselecteerde items importeren</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+<script>
+document.querySelectorAll('.import-method-toggle input[type=radio]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    var row = this.closest('.import-row');
+    var isUpload = this.value === 'upload';
+    row.querySelector('.import-upload-field').style.display = isUpload ? 'block' : 'none';
+    row.querySelector('.import-url').style.display = isUpload ? 'none' : 'block';
+  });
+});
+</script>
+{% endblock %}

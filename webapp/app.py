@@ -48,6 +48,35 @@ SECTION_MAP = {
     "workflows": "09_Workflows",
 }
 ALLOWED_UPLOAD_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
+
+WETGEVING_THEMAS = [
+    "seveso", "arbo", "atex", "milieu", "chemie", "verpakking",
+    "duurzaamheid", "cyber", "pgs", "product", "transport", "iso", "food",
+    "eu", "nationaal", "lokaal", "normen_en_richtlijnen",
+]
+
+WETGEVING_REGISTER = [
+    {"thema": "seveso",       "naam": "Seveso III / Bal",              "type": "EU richtlijn / NL besluit", "url": "https://iplo.nl/regelgeving/regels-voor-activiteiten/seveso-inrichting/"},
+    {"thema": "arbo",         "naam": "Arbeidsomstandighedenwet",      "type": "Nationale wet",             "url": "https://www.arboportaal.nl/"},
+    {"thema": "atex",         "naam": "ATEX 153/114",                  "type": "EU richtlijn",              "url": "https://www.arboportaal.nl/onderwerpen/explosieveiligheid-atex"},
+    {"thema": "milieu",       "naam": "BAL - Besluit Activiteiten",    "type": "Besluit",                   "url": "https://iplo.nl/thema/lucht/"},
+    {"thema": "chemie",       "naam": "REACH",                         "type": "EU verordening",            "url": "https://echa.europa.eu/regulations/reach"},
+    {"thema": "chemie",       "naam": "CLP",                           "type": "EU verordening",            "url": "https://echa.europa.eu/regulations/clp"},
+    {"thema": "verpakking",   "naam": "PPWR",                          "type": "EU verordening",            "url": "https://environment.ec.europa.eu/topics/waste-and-recycling/packaging-waste_en"},
+    {"thema": "duurzaamheid", "naam": "CSRD",                          "type": "EU richtlijn",              "url": "https://finance.ec.europa.eu/"},
+    {"thema": "cyber",        "naam": "NIS2",                          "type": "EU richtlijn",              "url": "https://www.ncsc.nl/"},
+    {"thema": "pgs",          "naam": "PGS 15",                        "type": "Richtlijn",                 "url": "https://publicatiereeksgevaarlijkestoffen.nl/pgs15"},
+    {"thema": "pgs",          "naam": "PGS 19",                        "type": "Richtlijn",                 "url": "https://publicatiereeksgevaarlijkestoffen.nl/publicaties/pgs19/"},
+    {"thema": "pgs",          "naam": "PGS 29",                        "type": "Richtlijn",                 "url": "https://publicatiereeksgevaarlijkestoffen.nl/publicaties/pgs29/"},
+    {"thema": "pgs",          "naam": "PGS 31",                        "type": "Richtlijn",                 "url": "https://publicatiereeksgevaarlijkestoffen.nl/publicaties/pgs31/"},
+    {"thema": "product",      "naam": "Aerosolrichtlijn",              "type": "EU richtlijn",              "url": "https://single-market-economy.ec.europa.eu/"},
+    {"thema": "transport",    "naam": "ADR",                           "type": "Internationaal verdrag",    "url": "https://www.rijksoverheid.nl/onderwerpen/gevaarlijke-stoffen"},
+    {"thema": "iso",          "naam": "ISO 9001",                      "type": "Norm",                      "url": "https://www.iso.org"},
+    {"thema": "iso",          "naam": "ISO 14001",                     "type": "Norm",                      "url": "https://www.iso.org"},
+    {"thema": "iso",          "naam": "ISO 45001",                     "type": "Norm",                      "url": "https://www.iso.org"},
+    {"thema": "iso",          "naam": "ISO 13485",                     "type": "Norm",                      "url": "https://www.iso.org"},
+    {"thema": "food",         "naam": "FSSC 22000",                    "type": "Norm",                      "url": "https://www.fssc.com"},
+]
 SOURCE_FOLDER_MAP = {
     ".pdf": "pdf",
     ".docx": "interne_documenten",
@@ -363,7 +392,59 @@ def create_app() -> Flask:
             safe_build_indexes(kb_root)
             return redirect(url_for("wetgeving", status="toegevoegd"))
 
-        return render_template("wetgeving_upload.html")
+        return render_template("wetgeving_upload.html", themas=WETGEVING_THEMAS)
+
+    @app.route("/wetgeving/importeer", methods=["GET", "POST"])
+    def wetgeving_importeer() -> str:
+        require_role(app.config["DATABASE_URL"], {"admin", "editor"})
+        results: list[dict] = []
+        if request.method == "POST":
+            existing = {doc.path.stem for doc in load_documents(kb_root) if doc.section_key == "wetgeving"}
+            for i, item in enumerate(WETGEVING_REGISTER):
+                if not request.form.get(f"item_{i}"):
+                    continue
+                method = request.form.get(f"method_{i}", "url")
+                titel = item["naam"]
+                thema = item["thema"]
+                tags = f"{thema},{slugify(titel)}"
+                categories = thema
+                try:
+                    if method == "url":
+                        path = create_regulation_record_from_url(
+                            kb_root=kb_root,
+                            source_url=item["url"],
+                            title=titel,
+                            jurisdiction=thema,
+                            subject=thema,
+                            tags=tags,
+                            categories=categories,
+                            source_label=item["url"],
+                        )
+                        results.append({"naam": titel, "status": "ok", "bericht": path.name})
+                    else:
+                        upload = request.files.get(f"bestand_{i}")
+                        if not upload or not upload.filename:
+                            results.append({"naam": titel, "status": "overgeslagen", "bericht": "Geen bestand geüpload"})
+                            continue
+                        path = create_regulation_record_from_upload(
+                            kb_root=kb_root,
+                            upload_name=upload.filename,
+                            binary_content=upload.read(),
+                            title=titel,
+                            jurisdiction=thema,
+                            subject=thema,
+                            tags=tags,
+                            categories=categories,
+                            source_label=titel,
+                        )
+                        results.append({"naam": titel, "status": "ok", "bericht": path.name})
+                except Exception as exc:
+                    results.append({"naam": titel, "status": "fout", "bericht": str(exc)})
+            load_documents.cache_clear()
+            safe_build_indexes(kb_root)
+            return render_template("wetgeving_importeer.html", register=WETGEVING_REGISTER, results=results)
+        existing_slugs = {doc.path.stem for doc in load_documents(kb_root) if doc.section_key == "wetgeving"}
+        return render_template("wetgeving_importeer.html", register=WETGEVING_REGISTER, results=[], existing_slugs=existing_slugs)
 
     @app.route("/casussen")
     def casussen() -> str:
@@ -1407,7 +1488,7 @@ Nog op te stellen.
 
 def normalize_jurisdiction(value: str) -> str:
     cleaned = slugify(value) if value else "nationaal"
-    if cleaned in {"eu", "nationaal", "lokaal", "normen_en_richtlijnen"}:
+    if cleaned in WETGEVING_THEMAS:
         return cleaned
     return "nationaal"
 

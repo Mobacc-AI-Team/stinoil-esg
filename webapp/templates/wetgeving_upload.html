@@ -6,17 +6,17 @@
     <div>
       <div class="eyebrow">Upload</div>
       <h2>Voeg wetgeving toe aan de bibliotheek</h2>
-      <p>Na upload wordt het bronbestand opgeslagen, een wetgevingskaart aangemaakt en de inhoud direct zoekbaar gemaakt.</p>
+      <p>Vul een URL in <em>of</em> upload een bestand. Het systeem maakt automatisch een zoekbare wetgevingskaart aan.</p>
     </div>
   </div>
 
   <form method="post" enctype="multipart/form-data" class="upload-grid">
     <label class="full-width">
-      <span>Bron-URL</span>
-      <input type="url" name="bron_url" placeholder="Plak hier een officiële URL naar wetgeving of een PDF. Laat leeg als je een bestand uploadt.">
+      <span>Bron-URL <small class="muted">(laat leeg bij bestandsupload)</small></span>
+      <input type="url" name="bron_url" placeholder="https://eur-lex.europa.eu/... of https://iplo.nl/...">
     </label>
     <label>
-      <span>Bestand</span>
+      <span>Bestand <small class="muted">(PDF, Word, TXT of MD)</small></span>
       <input type="file" name="bestand" accept=".pdf,.docx,.txt,.md">
     </label>
     <label>
@@ -24,12 +24,35 @@
       <input type="text" name="titel" placeholder="Bijvoorbeeld: ADR 2025 wijziging">
     </label>
     <label>
-      <span>Jurisdictie</span>
+      <span>Thema / categorie</span>
       <select name="jurisdictie">
-        <option value="nationaal">Nationaal</option>
-        <option value="eu">EU</option>
-        <option value="lokaal">Lokaal</option>
-        <option value="normen_en_richtlijnen">Normen en richtlijnen</option>
+        <optgroup label="Chemie & gevaarlijke stoffen">
+          <option value="chemie">Chemie (REACH, CLP, SDS)</option>
+          <option value="pgs">PGS richtlijnen (opslag)</option>
+          <option value="transport">Transport (ADR)</option>
+          <option value="seveso">Seveso / BRZO</option>
+          <option value="atex">ATEX (explosiegevaar)</option>
+        </optgroup>
+        <optgroup label="Milieu & veiligheid">
+          <option value="milieu">Milieu (BAL, emissies)</option>
+          <option value="arbo">Arbo (werknemersveiligheid)</option>
+          <option value="verpakking">Verpakking (PPWR)</option>
+          <option value="product">Product (aerosolrichtlijn)</option>
+        </optgroup>
+        <optgroup label="Duurzaamheid & overig">
+          <option value="duurzaamheid">Duurzaamheid (CSRD, ESG)</option>
+          <option value="cyber">Cyber (NIS2)</option>
+          <option value="food">Food (FSSC)</option>
+        </optgroup>
+        <optgroup label="Normen">
+          <option value="iso">ISO normen</option>
+          <option value="normen_en_richtlijnen">Overige normen en richtlijnen</option>
+        </optgroup>
+        <optgroup label="Jurisdictie">
+          <option value="eu">EU</option>
+          <option value="nationaal">Nationaal</option>
+          <option value="lokaal">Lokaal</option>
+        </optgroup>
       </select>
     </label>
     <label>
@@ -37,19 +60,20 @@
       <input type="text" name="onderwerp" placeholder="Bijvoorbeeld: etikettering, opslag, transport">
     </label>
     <label>
-      <span>Tags</span>
-      <input type="text" name="tags" placeholder="Bijvoorbeeld: clp, etikettering, compliance">
+      <span>Tags <small class="muted">(komma-gescheiden)</small></span>
+      <input type="text" name="tags" placeholder="clp, etikettering, compliance">
     </label>
     <label>
-      <span>Categorieën</span>
-      <input type="text" name="categorieen" placeholder="Bijvoorbeeld: brzo, atex, arbeidsomstandighedenbesluit, qra">
+      <span>Categorieën <small class="muted">(komma-gescheiden)</small></span>
+      <input type="text" name="categorieen" placeholder="brzo, atex, vergunningen">
     </label>
     <label>
       <span>Bronlabel</span>
-      <input type="text" name="bron" placeholder="Bijvoorbeeld: Eur-Lex of overheid.nl">
+      <input type="text" name="bron" placeholder="Eur-Lex, overheid.nl, interne publicatie">
     </label>
-    <div class="form-actions">
-      <button type="submit">Uploaden en opnemen</button>
+    <div class="form-actions full-width">
+      <button type="submit">Toevoegen aan kennisbank</button>
+      <a class="button-link subtle" href="{{ url_for('wetgeving_importeer') }}">Of importeer uit het register →</a>
     </div>
   </form>
 </section>
