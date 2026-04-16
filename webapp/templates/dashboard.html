@@ -13,6 +13,37 @@
   </form>
 </section>
 
+<section class="action-cards">
+  <a class="action-card card" href="{{ url_for('nieuwe_casus') }}">
+    <div class="action-icon">+</div>
+    <div>
+      <strong>Nieuwe vraag toevoegen</strong>
+      <p>Archiveer een klant- of leveranciersvraag inclusief automatische categorisering.</p>
+    </div>
+  </a>
+  <a class="action-card card" href="{{ url_for('wetgeving_upload') }}">
+    <div class="action-icon">↑</div>
+    <div>
+      <strong>Wetgeving uploaden</strong>
+      <p>Voeg een PDF, Word-document of URL toe aan de wetgevingsbibliotheek.</p>
+    </div>
+  </a>
+  <a class="action-card card" href="{{ url_for('wetgeving') }}">
+    <div class="action-icon">§</div>
+    <div>
+      <strong>Wetgeving raadplegen</strong>
+      <p>Doorzoek de bibliotheek van {{ stats.wetgeving }} wetgevingsdocumenten.</p>
+    </div>
+  </a>
+  <a class="action-card card" href="{{ url_for('casussen') }}">
+    <div class="action-icon">◎</div>
+    <div>
+      <strong>Casussen bekijken</strong>
+      <p>{{ stats.vragen }} vragen, {{ stats.beoordelingen }} beoordelingen en {{ stats.antwoorden }} antwoorden.</p>
+    </div>
+  </a>
+</section>
+
 <section class="stats-grid">
   <article class="stat card"><span>Wetgeving</span><strong>{{ stats.wetgeving }}</strong></article>
   <article class="stat card"><span>Vragen</span><strong>{{ stats.vragen }}</strong></article>
@@ -34,7 +65,7 @@
         <span>{{ doc.metadata.get('datum', '') }}</span>
       </li>
       {% else %}
-      <li>Geen vragen gevonden.</li>
+      <li class="muted">Nog geen vragen. <a href="{{ url_for('nieuwe_casus') }}">Voeg de eerste toe →</a></li>
       {% endfor %}
     </ul>
   </article>
@@ -51,7 +82,7 @@
         <span>{{ doc.metadata.get('datum', '') }}</span>
       </li>
       {% else %}
-      <li>Geen antwoorden gevonden.</li>
+      <li class="muted">Nog geen antwoorden.</li>
       {% endfor %}
     </ul>
   </article>
@@ -59,7 +90,7 @@
 
 <section class="card">
   <div class="card-head">
-    <h3>Veelgebruikte thema’s</h3>
+    <h3>Veelgebruikte thema's</h3>
     <a href="{{ url_for('zoek', section='wetgeving') }}">Doorzoeken</a>
   </div>
   <div class="tag-cloud">
