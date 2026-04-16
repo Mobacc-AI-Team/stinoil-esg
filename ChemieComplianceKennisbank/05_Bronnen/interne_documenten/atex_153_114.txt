@@ -1,0 +1,76 @@
+Explosieveiligheid/ATEX | Arboportaal Ga direct naar inhoud Naar de homepage van Arboportaal Ministerie van Sociale Zaken en Werkgelegenheid Arboportaal Onderwerpen Werken met gevaarlijke stoffen Vul in wat u zoekt Explosieveiligheid/ATEX De eenvoudigste manier om explosieveiligheid te garanderen is ervoor te zorgen dat er geen brandbare stof aanwezig is. Is de stof echter noodzakelijk en niet vervangbaar door een stof die minder explosierisico heeft? Dan moeten de omstandigheden in een explosieve atmosfeer worden beheerst. Ontstaan van een explosie 
+
+ Explosiegevaar is aanwezig zodra een mengsel van lucht en een brandbare stof (in de vorm van gassen, dampen, nevels of stof) onder atmosferische omstandigheden wordt ontstoken en na ontsteking uitbreidt totdat alle brandbare stof verbrand is. Het explosiegevaar kan zich uiten in drie vormen: 
+
+ 
+ gasexplosiegevaar 
+ nevelexplosiegevaar 
+ stofexplosiegevaar 
+ 
+
+ Gasexplosiegevaar 
+
+ Wanneer brandbare gassen in de atmosfeer vrijkomen, vermengen ze zich direct met de lucht die voor circa 21% uit zuurstof bestaat. Als de concentratie van de brandbare stof in het ontstane gasmengsel tussen de onderste en de bovenste explosiegrens ligt, dan kan het mengsel ontploffen als het wordt ontstoken. 
+
+ Nevelexplosiegevaar 
+
+ Een vloeibare brandbare stof zal afhankelijk van de dampspanning in meerdere of mindere mate verdampen en zal dus met de lucht een ontplofbaar mengsel vormen. De snelheid waarmee damp wordt gevormd en de concentratie boven het vloeistofoppervlak worden hoger naarmate de temperatuur van de vloeistof hoger is. Zodra de vloeistof een temperatuur boven zijn vlampunt heeft, ligt die concentratie boven de LEL ( Lower Explosive Limit ) en is het mengsel ontsteekbaar. Wanneer een vloeistof wordt verstoven, ontstaan zeer kleine druppeltjes, oftewel nevel. Hoe kleiner de druppeltjes zijn, hoe stabieler de nevel is, en des te meer deze zich als een gas gedraagt en vervolgens op een overeenkomstige manier kan ontploffen: nevelontploffing. 
+
+ Stofexplosiegevaar 
+
+ Voor het optreden van een stofontploffing is het nodig dat een brandbare vaste stof in fijn verdeelde vorm (denk hierbij aan poeder) wordt opgewerveld en intensief met lucht (of een ander zuurstofhoudend gas) wordt gemengd alvorens te worden ontstoken. 
+
+ Beroepsgroepen 
+
+ Werkgevers die te maken krijgen met explosiegevaar zijn actief binnen branches zoals de (petro)chemie, de verfindustrie, de papierindustrie, de voedingsmiddelenindustrie en de houtverwerkende industrie. De specifieke beroepen waaraan gedacht moet worden, zijn die beroepen die betrokken zijn bij het primaire proces van het bedrijf zoals: operators van installaties en machines, installateurs, onderhoudsmonteurs en logistiek medewerkers. 
+
+ Wanneer is er gevaar? 
+
+ Gasexplosiegevaar 
+
+ Het meten van gasexplosiegevaar kan worden uitgevoerd met een explosiemeter (LEL-meter). Op basis van deze meting kan direct worden vastgesteld of er sprake is van explosiegevaar. 
+
+ Stofexplosiegevaar 
+
+ Er is geen meetinstrument te koop voor het meten van de concentratie van een stofwolk. In de praktijk wordt de regel aangehouden dat een ontplofbare wolk kan worden herkend aan: “een zicht minder dan 1 meter.” Stofexplosiegevaar is ook aanwezig wanneer er voldoende stofafzetting van brandbare stof plaatsvindt. In de meeste gevallen is een stoflaagdikte van 0,1 millimeter al voldoende om een ontplofbaar stof-luchtmengsel te creëren. Een praktische richtlijn is daarom dat stofexplosiegevaar aanwezig is als men zijn voetstappen op de vloer kan zien. 
+
+ Wettelijke verplichtingen 
+
+ De werkgever is op grond van de Arbowet verplicht een beleid te voeren dat erop gericht is de werknemers te beschermen tegen explosiegevaar. Het Arbeidsomstandighedenbesluit ( artikel 3.5 a-f ) bevat de bepalingen van de Europese richtlijn 1999/92/EG (ook wel bekend als ATEX ( Atmosphères Explosibles ) 153). Hierin staan de verplichtingen rondom explosiegevaar. De daaraan verbonden risico’s voor de werknemer moeten schriftelijk worden vastgelegd in een zogenaamd explosieveiligheidsdocument, dat minimaal bestaat uit: 
+
+ 
+ een nadere risicoanalyse; 
+ een gevarenzone-indeling; 
+ passende technische en organisatorische maatregelen; 
+ voorlichting van de werknemers. 
+ 
+
+ Op de website van de Nederlandse Arbeidsinspectie is er voor Besluit risico&#x27;s zware ongevallen (Brzo)- en Aanvullende Risico-Inventarisatie en -Evaluatie (ARIE)-bedrijven een checklist te downloaden om het explosieveiligheidsdocument op volledigheid te toetsen. 
+
+ Voor fabrikanten en importeurs van apparatuur 
+
+ De regels voor producten die bestemd zijn voor gebruik van apparatuur in explosieve atmosferen staan in de ATEX-richtlijn 114. Deze zijn opgenomen in het Warenwetbesluit Explosieveilig Materieel. In de ATEX Guide Third Edition staat hierover meer informatie. 
+
+ Maatregelen om explosiegevaar tegen te gaan 
+
+ In algemene zin kan zowel gas- als stofexplosiegevaar worden voorkomen door: 
+
+ 
+ Het vervangen van de brandbare stof door een stof met mindere en/of geen brandbare eigenschappen. 
+ Een brandbare stof binnen de omhulling/proces te houden en niet op te laten mengen met de omgeving van de installatie. 
+ Het werken onder ventilatiecondities waardoor explosiegevaar kan worden uitgesloten omdat de concentratie van de onderste explosiegrens niet bereikt kan worden. 
+ Het werken onder zuurstofarme condities (inertiseren) waardoor explosiegevaar kan worden uitgesloten. 
+ Repressief: het wegnemen van ontstekingsbronnen op plaatsen waar explosiegevaar zich kan voordoen of de ontstekingsbronnen laten voldoen aan een passend beschermingsniveau zodat de kans op ontsteking voldoende verlaagd wordt. 
+ 
+
+ Specifiek het voorkomen van stofexplosiegevaar kan plaatsvinden door invulling van de volgende doelstellingen: 
+
+ 
+ Preventief: zorg ervoor dat geen brandbaar stof kan worden opgewerveld op plaatsen waar potentiële ontstekingsbronnen kunnen zijn (denk hierbij aan schoonhuishouden). 
+ Repressief: zorg ervoor dat (als preventie niet mogelijk is of faalt) een stofwolk niet ontstoken wordt door gebruik te maken van explosieveilig materiaal. 
+ Beheersing: zorg ervoor dat (als preventie en repressie onmogelijk zijn of falen) de door een ontploffing veroorzaakte schade beperkt blijft (denk hierbij aan een explosieluik) en zorg ervoor dat een eerste kleine ontploffing niet kan leiden tot een wellicht veel zwaardere secundaire ontploffing. 
+ 
+
+ Handige tools en documenten 
+
+ ATEX Guide Third Edition Hoort bij Werken met gevaarlijke stoffen Thema Service Contact Sitemap Help Archief RSS Over deze site Over het Arboportaal Copyright Privacy Cookies Toegankelijkheid Kwetsbaarheid melden

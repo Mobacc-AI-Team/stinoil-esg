@@ -1,0 +1,11 @@
+CLP (Verordening EG 1272/2008) harmoniseert de classificatie, etikettering en verpakking van chemische stoffen en mengsels in de EU op basis van het GHS-systeem.
+
+Kernverplichtingen:
+- Classificatie van stoffen en mengsels op basis van gevaarseigenschappen
+- Etikettering met gevarenpictogrammen, signaalwoorden, H- en P-zinnen
+- Notificatie van clasificaties aan ECHA (C&L Inventory)
+- Juiste verpakking van gevaarlijke stoffen
+
+Reikwijdte: Producenten en importeurs van chemische stoffen en mengsels.
+Bevoegd gezag: ECHA
+Officiële bron: https://echa.europa.eu/regulations/clp

@@ -1,0 +1,6 @@
+ISO 45001:2018 specificeert eisen voor een managementsysteem voor veiligheid en gezondheid op het werk (VGW). De norm vervangt OHSAS 18001.
+
+Kernonderwerpen: identificatie van gevaren en risico's, wettelijke verplichtingen, doelstellingen VGW, operationele beheersing, onderzoek van incidenten, interne audit en directiebeoordeling.
+
+Certificering: door geaccrediteerde certificerende instelling.
+Organisatie: ISO

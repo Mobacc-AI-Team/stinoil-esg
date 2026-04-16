@@ -1,0 +1,12 @@
+REACH (Verordening EG 1907/2006) reguleert de registratie, evaluatie, autorisatie en restrictie van chemische stoffen in de EU.
+
+Kernverplichtingen:
+- Registratie van stoffen >1 ton/jaar bij ECHA
+- Opstellen en bijhouden van veiligheidsinformatiebladen (SDS)
+- Identificatie van SVHC (Substances of Very High Concern)
+- Autorisatieplicht voor stoffen op de autorisatielijst (Annex XIV)
+- Restricties voor bepaalde gevaarlijke stoffen (Annex XVII)
+
+Reikwijdte: Producenten, importeurs en downstream gebruikers van chemische stoffen en mengsels.
+Bevoegd gezag: ECHA (Europees Chemicaliënagentschap)
+Officiële bron: https://echa.europa.eu/regulations/reach
