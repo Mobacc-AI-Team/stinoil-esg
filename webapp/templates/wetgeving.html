@@ -12,41 +12,82 @@
         <input type="text" name="q" value="{{ query }}" placeholder="Zoek in wetgeving">
         <button type="submit">Filter</button>
       </form>
-      <a class="button-link" href="{{ url_for('wetgeving_upload') }}">Upload document</a>
+      <a class="button-link" href="{{ url_for('wetgeving_upload') }}">+ Toevoegen</a>
+      <a class="button-link subtle" href="{{ url_for('wetgeving_importeer') }}">Importeer register</a>
     </div>
   </div>
+
   {% if upload_status == 'toegevoegd' %}
-  <div class="notice success">Document toegevoegd aan de bibliotheek en direct zoekbaar gemaakt.</div>
+  <div class="notice success">Document toegevoegd en direct zoekbaar gemaakt.</div>
   {% elif upload_status == 'geen_bestand' %}
-  <div class="notice error">Selecteer eerst een bestand om te uploaden.</div>
+  <div class="notice error">Selecteer eerst een bestand of URL.</div>
   {% elif upload_status == 'ongeldig_bestand' %}
   <div class="notice error">Bestandstype niet ondersteund. Gebruik pdf, docx, txt of md.</div>
   {% elif upload_status == 'ongeldige_url' %}
-  <div class="notice error">URL niet geldig. Gebruik een http- of https-link naar een officiële bron.</div>
+  <div class="notice error">URL niet geldig. Gebruik een http- of https-link.</div>
   {% elif upload_status == 'url_import_mislukt' %}
   <div class="notice error">URL kon niet worden opgehaald of verwerkt.</div>
   {% elif upload_status == 'extractie_mislukt' %}
-  <div class="notice error">Tekstextractie mislukt. Controleer het document of probeer een tekstversie.</div>
+  <div class="notice error">Tekstextractie mislukt. Probeer een andere versie.</div>
   {% endif %}
-  <div class="table-wrap">
+
+  {% if documents %}
+  {# Groepeer per thema (= eerste map onder 01_Wetgeving) #}
+  {% set thema_docs = {} %}
+  {% for doc in documents %}
+    {% set parts = doc.rel_path.split('/') %}
+    {% set thema = parts[1] if parts | length > 2 else 'overig' %}
+    {% if thema not in thema_docs %}
+      {% set _ = thema_docs.update({thema: []}) %}
+    {% endif %}
+    {% set _ = thema_docs[thema].append(doc) %}
+  {% endfor %}
+
+  {% for thema, docs in thema_docs.items() %}
+  <div class="wetgeving-groep">
+    <div class="wetgeving-groep-header">
+      <span class="pill subtle">{{ thema | replace('_', ' ') | upper }}</span>
+      <span class="muted" style="font-size:.85rem">{{ docs | length }} document{{ 's' if docs | length != 1 }}</span>
+    </div>
     <table>
       <thead>
-        <tr><th>Titel</th><th>Onderwerp</th><th>Categorieën</th><th>Jurisdictie</th><th>Status</th></tr>
+        <tr>
+          <th style="width:35%">Titel</th>
+          <th>Onderwerp</th>
+          <th>Categorieën</th>
+          <th>Status</th>
+          <th>Datum</th>
+        </tr>
       </thead>
       <tbody>
-        {% for doc in documents %}
+        {% for doc in docs %}
         <tr>
           <td><a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a></td>
           <td>{{ doc.metadata.get('onderwerp', '—') }}</td>
-          <td>{{ ', '.join(doc.categories) if doc.categories else '—' }}</td>
-          <td>{{ doc.metadata.get('jurisdictie', '—') }}</td>
-          <td>{{ doc.metadata.get('status', '—') }}</td>
+          <td>
+            {% for cat in doc.categories[:3] %}
+            <span class="pill subtle" style="font-size:.78rem">{{ cat }}</span>
+            {% endfor %}
+          </td>
+          <td>
+            {% set s = doc.metadata.get('status', '') %}
+            {% if s %}
+            <span class="pill {% if s == 'actief' %}success{% else %}subtle{% endif %}" style="font-size:.78rem">{{ s }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="muted" style="font-size:.85rem">{{ doc.metadata.get('datum', '—') }}</td>
         </tr>
-        {% else %}
-        <tr><td colspan="5">Geen wetgevingsdocumenten gevonden.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="notice">
+    Nog geen wetgevingsdocumenten.
+    <a href="{{ url_for('wetgeving_importeer') }}">Importeer het register →</a>
+  </div>
+  {% endif %}
 </section>
 {% endblock %}

@@ -6,87 +6,83 @@
     <div>
       <div class="eyebrow">Importeer</div>
       <h2>Wetgevingsregister importeren</h2>
-      <p>Selecteer welke wetgeving je wilt toevoegen. Kies per item of je de officiële URL wil ophalen of een eigen document wil uploaden.</p>
+      <p>Vink aan wat je wilt toevoegen. Kies per item of je de URL ophaalt of een eigen document uploadt.</p>
     </div>
   </div>
 
   {% if results %}
-  <div class="import-results card subtle-card">
-    <h3>Resultaat</h3>
-    <ul class="import-result-list">
-      {% for r in results %}
-      <li class="import-result-item {{ r.status }}">
-        <strong>{{ r.naam }}</strong>
-        <span class="pill {% if r.status == 'ok' %}success{% elif r.status == 'fout' %}error{% else %}muted{% endif %}">
-          {{ r.status }}
-        </span>
-        <span class="muted">{{ r.bericht }}</span>
-      </li>
-      {% endfor %}
-    </ul>
-    <div class="form-actions">
+  <div class="card subtle-card" style="margin-bottom:24px">
+    <h3 style="margin-top:0">Resultaat</h3>
+    <table>
+      <thead><tr><th>Naam</th><th>Status</th><th>Detail</th></tr></thead>
+      <tbody>
+        {% for r in results %}
+        <tr>
+          <td>{{ r.naam }}</td>
+          <td><span class="pill {% if r.status == 'ok' %}success{% elif r.status == 'fout' %}error{% else %}subtle{% endif %}">{{ r.status }}</span></td>
+          <td class="muted">{{ r.bericht }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="form-actions" style="margin-top:16px">
       <a class="button-link" href="{{ url_for('wetgeving') }}">Naar wetgevingsbibliotheek →</a>
     </div>
   </div>
   {% endif %}
 
-  {% if not results %}
   <form method="post" enctype="multipart/form-data">
+    {% set ns = namespace(thema_prev='') %}
+    {% for i in range(register | length) %}
+    {% set item = register[i] %}
 
-    {% set themas = register | map(attribute='thema') | unique | list %}
-    {% for thema in themas %}
+    {% if item.thema != ns.thema_prev %}
+    {% if not loop.first %}</div>{% endif %}
     <div class="import-group">
-      <div class="import-group-header">
-        <span class="pill subtle">{{ thema | upper }}</span>
-      </div>
-      {% for i in range(register | length) %}
-      {% set item = register[i] %}
-      {% if item.thema == thema %}
-      <div class="import-row {% if existing_slugs and item.naam | lower | replace(' ', '_') | replace('/', '_') in existing_slugs %}already-imported{% endif %}">
+      <div class="import-group-header"><span class="pill subtle">{{ item.thema | upper }}</span></div>
+    {% set ns.thema_prev = item.thema %}
+    {% endif %}
+
+      <div class="import-row">
         <label class="import-checkbox">
-          <input type="checkbox" name="item_{{ i }}" value="1"
-            {% if existing_slugs and item.naam | lower | replace(' ', '_') in existing_slugs %}disabled{% endif %}>
-          <div class="import-row-info">
-            <strong>{{ item.naam }}</strong>
-            <span class="muted">{{ item.type }}</span>
+          <input type="checkbox" name="item_{{ i }}" value="1">
+          <div>
+            <strong>{{ item.naam }}</strong><br>
+            <span class="muted" style="font-size:.85rem">{{ item.type }}</span>
           </div>
         </label>
-        <div class="import-method-toggle">
+        <div class="import-controls">
           <label class="method-option">
-            <input type="radio" name="method_{{ i }}" value="url" checked>
-            <span>URL ophalen</span>
+            <input type="radio" name="method_{{ i }}" value="url" checked> URL ophalen
           </label>
           <label class="method-option">
-            <input type="radio" name="method_{{ i }}" value="upload">
-            <span>Document uploaden</span>
+            <input type="radio" name="method_{{ i }}" value="upload"> Document uploaden
           </label>
-        </div>
-        <div class="import-url muted">
-          <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.url | truncate(60) }}</a>
-        </div>
-        <div class="import-upload-field" style="display:none;">
-          <input type="file" name="bestand_{{ i }}" accept=".pdf,.docx,.txt,.md">
+          <div class="import-url-display">
+            <a href="{{ item.url }}" target="_blank" rel="noopener" class="muted" style="font-size:.82rem">{{ item.url | truncate(70) }}</a>
+          </div>
+          <div class="import-upload-field" style="display:none">
+            <input type="file" name="bestand_{{ i }}" accept=".pdf,.docx,.txt,.md">
+          </div>
         </div>
       </div>
-      {% endif %}
-      {% endfor %}
-    </div>
+
+    {% if loop.last %}</div>{% endif %}
     {% endfor %}
 
-    <div class="form-actions full-width">
+    <div class="form-actions" style="margin-top:24px">
       <button type="submit">Geselecteerde items importeren</button>
     </div>
   </form>
-  {% endif %}
 </section>
 
 <script>
-document.querySelectorAll('.import-method-toggle input[type=radio]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    var row = this.closest('.import-row');
+document.querySelectorAll('.method-option input[type=radio]').forEach(function(r) {
+  r.addEventListener('change', function() {
+    var row = this.closest('.import-controls');
     var isUpload = this.value === 'upload';
     row.querySelector('.import-upload-field').style.display = isUpload ? 'block' : 'none';
-    row.querySelector('.import-url').style.display = isUpload ? 'none' : 'block';
+    row.querySelector('.import-url-display').style.display = isUpload ? 'none' : 'block';
   });
 });
 </script>
