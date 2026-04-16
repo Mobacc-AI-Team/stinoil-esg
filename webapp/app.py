@@ -141,7 +141,7 @@ def create_app() -> Flask:
     app = Flask(
         __name__,
         template_folder=str(WEBAPP_DIR / "templates"),
-        static_folder=str(WEBAPP_DIR.parent / "public"),
+        static_folder=str(WEBAPP_DIR / "static"),
         static_url_path="",
     )
     app.secret_key = os.environ.get("APP_SECRET_KEY", "dev-secret-change-me")
