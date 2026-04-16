@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Setup Check · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card form-shell narrow-shell">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Setup</div>
+      <h2>Omgevingscontrole</h2>
+      <p>Controle van database, bootstrap en beheeraccount voor deze deployment.</p>
+    </div>
+  </div>
+
+  <div class="upload-grid single-column">
+    <div class="notice {% if database_configured %}success{% else %}error{% endif %}">
+      <strong>Database geconfigureerd:</strong> {{ 'ja' if database_configured else 'nee' }}
+    </div>
+    <div class="notice {% if database_connected %}success{% else %}error{% endif %}">
+      <strong>Database bereikbaar:</strong> {{ 'ja' if database_connected else 'nee' }}
+    </div>
+    <div class="notice {% if users_table_present %}success{% else %}error{% endif %}">
+      <strong>Users-tabel aanwezig:</strong> {{ 'ja' if users_table_present else 'nee' }}
+    </div>
+    <div class="notice {% if admin_present %}success{% else %}error{% endif %}">
+      <strong>Admin aanwezig:</strong> {{ 'ja' if admin_present else 'nee' }}
+    </div>
+    <div class="notice {% if bootstrap_enabled %}success{% else %}error{% endif %}">
+      <strong>Bootstrap actief:</strong> {{ 'ja' if bootstrap_enabled else 'nee' }}
+    </div>
+  </div>
+
+  <div class="notice">
+    <strong>Volgende stap</strong><br>
+    {% if not database_configured %}
+    Voeg `POSTGRES_URL` of `DATABASE_URL` toe in Vercel.
+    {% elif not admin_present and bootstrap_enabled %}
+    Open daarna <code>/setup-admin</code> om `compliance@stinoil.com` aan te maken.
+    {% elif admin_present %}
+    De app is klaar voor login met `compliance@stinoil.com`.
+    {% else %}
+    Zet `ALLOW_ADMIN_BOOTSTRAP=true` en open daarna <code>/setup-admin</code>.
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

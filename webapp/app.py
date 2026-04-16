@@ -179,6 +179,7 @@ def create_app() -> Flask:
             "kb_root": kb_root,
             "section_options": list(SECTION_MAP.items()),
             "current_user": getattr(g, "current_user", None),
+            "database_configured": bool(app.config["DATABASE_URL"]),
         }
 
     @app.route("/login", methods=["GET", "POST"])
@@ -224,6 +225,39 @@ def create_app() -> Flask:
             "bootstrap_done.html",
             email="compliance@stinoil.com",
             message="Het beheeraccount is ingesteld. Je kunt nu inloggen.",
+        )
+
+    @app.route("/setup-check")
+    def setup_check() -> str:
+        database_url = app.config["DATABASE_URL"]
+        database_connected = False
+        users_table_present = False
+        admin_present = False
+
+        if database_url:
+            conn = get_db_connection(database_url)
+            if conn is not None:
+                database_connected = True
+                with conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'app_users')"
+                        )
+                        users_table_present = bool(cur.fetchone()[0])
+                        if users_table_present:
+                            cur.execute(
+                                "SELECT EXISTS (SELECT 1 FROM app_users WHERE email = %s)",
+                                ("compliance@stinoil.com",),
+                            )
+                            admin_present = bool(cur.fetchone()[0])
+
+        return render_template(
+            "setup_check.html",
+            database_configured=bool(database_url),
+            database_connected=database_connected,
+            users_table_present=users_table_present,
+            admin_present=admin_present,
+            bootstrap_enabled=os.environ.get("ALLOW_ADMIN_BOOTSTRAP", "false").lower() == "true",
         )
 
     @app.route("/")
@@ -955,11 +989,15 @@ def get_current_user(database_url: str) -> AuthUser | None:
 
 
 def require_login(database_url: str) -> None:
+    if not database_url:
+        return
     if get_current_user(database_url) is None:
         abort(401)
 
 
 def require_role(database_url: str, allowed_roles: set[str]) -> None:
+    if not database_url:
+        return
     user = get_current_user(database_url)
     if user is None:
         abort(401)

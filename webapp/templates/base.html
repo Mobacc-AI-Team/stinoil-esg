@@ -25,7 +25,10 @@
           <a href="{{ url_for('zoek') }}">Zoeken</a>
           <a href="{{ url_for('logout') }}">Uitloggen</a>
           {% else %}
+          <a href="{{ url_for('setup_check') }}">Setup check</a>
+          {% if database_configured %}
           <a href="{{ url_for('login') }}">Login</a>
+          {% endif %}
           {% endif %}
         </nav>
       </div>
