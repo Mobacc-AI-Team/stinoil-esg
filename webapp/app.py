@@ -141,8 +141,7 @@ def create_app() -> Flask:
     app = Flask(
         __name__,
         template_folder=str(WEBAPP_DIR / "templates"),
-        static_folder=str(WEBAPP_DIR / "static"),
-        static_url_path="",
+        static_folder=None,
     )
     app.secret_key = os.environ.get("APP_SECRET_KEY", "dev-secret-change-me")
     kb_root = resolve_kb_root()
@@ -176,6 +175,11 @@ def create_app() -> Flask:
     @app.errorhandler(403)
     def handle_forbidden(_exc):  # type: ignore[override]
         return render_template("forbidden.html"), 403
+
+    @app.route("/style.css")
+    def serve_css():
+        css = (WEBAPP_DIR / "static" / "style.css").read_text(encoding="utf-8")
+        return css, 200, {"Content-Type": "text/css; charset=utf-8"}
 
     @app.context_processor
     def inject_globals() -> dict[str, object]:
