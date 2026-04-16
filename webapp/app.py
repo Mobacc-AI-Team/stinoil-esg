@@ -181,6 +181,11 @@ def create_app() -> Flask:
         css = (WEBAPP_DIR / "static" / "style.css").read_text(encoding="utf-8")
         return css, 200, {"Content-Type": "text/css; charset=utf-8"}
 
+    @app.route("/logo.png")
+    def serve_logo():
+        data = (WEBAPP_DIR / "static" / "logo.png").read_bytes()
+        return data, 200, {"Content-Type": "image/png"}
+
     @app.context_processor
     def inject_globals() -> dict[str, object]:
         return {

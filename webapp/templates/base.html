@@ -9,10 +9,13 @@
   <body>
     <header class="site-header">
       <div class="container header-inner">
-        <div>
-          <div class="eyebrow">Chemie Compliance</div>
-          <h1 class="site-title"><a href="{{ url_for('dashboard') }}">Centrale Kennisbank</a></h1>
-          <p class="site-subtitle">Wetgeving, casuïstiek en uniforme antwoorden per locatie.</p>
+        <div class="header-brand">
+          <a href="{{ url_for('dashboard') }}"><img src="/logo.png" alt="Mobacc logo" class="site-logo"></a>
+          <div>
+            <div class="eyebrow">Chemie Compliance</div>
+            <h1 class="site-title"><a href="{{ url_for('dashboard') }}">Centrale Kennisbank</a></h1>
+            <p class="site-subtitle">Wetgeving, casuïstiek en uniforme antwoorden per locatie.</p>
+          </div>
         </div>
         <nav class="main-nav">
           <a href="{{ url_for('wetgeving') }}">Wetgeving</a>
