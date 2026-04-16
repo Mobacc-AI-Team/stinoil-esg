@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Importeer wetgevingsregister · Compliance Kennisbank{% endblock %}
 {% block content %}
-<section class="card form-shell wide-shell">
+<section class="card" style="max-width:960px">
   <div class="card-head stacked">
     <div>
       <div class="eyebrow">Importeer</div>
@@ -20,7 +20,7 @@
         <tr>
           <td>{{ r.naam }}</td>
           <td><span class="pill {% if r.status == 'ok' %}success{% elif r.status == 'fout' %}error{% else %}subtle{% endif %}">{{ r.status }}</span></td>
-          <td class="muted">{{ r.bericht }}</td>
+          <td class="muted" style="font-size:.85rem">{{ r.bericht }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -37,53 +37,60 @@
     {% set item = register[i] %}
 
     {% if item.thema != ns.thema_prev %}
-    {% if not loop.first %}</div>{% endif %}
-    <div class="import-group">
-      <div class="import-group-header"><span class="pill subtle">{{ item.thema | upper }}</span></div>
     {% set ns.thema_prev = item.thema %}
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 0 6px;border-top:2px solid var(--line);margin-top:{% if not loop.first %}16px{% else %}0{% endif %}">
+      <span class="pill subtle" style="font-size:.82rem;text-transform:uppercase;letter-spacing:.05em">{{ item.thema }}</span>
+    </div>
     {% endif %}
 
-      <div class="import-row">
-        <label class="import-checkbox">
-          <input type="checkbox" name="item_{{ i }}" value="1">
-          <div>
-            <strong>{{ item.naam }}</strong><br>
-            <span class="muted" style="font-size:.85rem">{{ item.type }}</span>
-          </div>
-        </label>
-        <div class="import-controls">
-          <label class="method-option">
-            <input type="radio" name="method_{{ i }}" value="url" checked> URL ophalen
-          </label>
-          <label class="method-option">
-            <input type="radio" name="method_{{ i }}" value="upload"> Document uploaden
-          </label>
-          <div class="import-url-display">
-            <a href="{{ item.url }}" target="_blank" rel="noopener" class="muted" style="font-size:.82rem">{{ item.url | truncate(70) }}</a>
-          </div>
-          <div class="import-upload-field" style="display:none">
-            <input type="file" name="bestand_{{ i }}" accept=".pdf,.docx,.txt,.md">
-          </div>
+    <div style="display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:start;padding:10px 0;border-bottom:1px solid var(--line)">
+
+      {{/* kolom 1: checkbox */}}
+      <div style="padding-top:3px">
+        <input type="checkbox" name="item_{{ i }}" value="1" style="width:16px;height:16px;cursor:pointer">
+      </div>
+
+      {{/* kolom 2: naam + type + URL */}}
+      <div>
+        <div style="font-weight:600;margin-bottom:2px">{{ item.naam }}</div>
+        <div class="muted" style="font-size:.83rem;margin-bottom:4px">{{ item.type }}</div>
+        <div class="import-url-{{ i }}" style="font-size:.81rem">
+          <a href="{{ item.url }}" target="_blank" rel="noopener" class="muted">{{ item.url }}</a>
+        </div>
+        <div class="import-file-{{ i }}" style="display:none;margin-top:4px">
+          <input type="file" name="bestand_{{ i }}" accept=".pdf,.docx,.txt,.md" style="font-size:.85rem">
         </div>
       </div>
 
-    {% if loop.last %}</div>{% endif %}
+      {{/* kolom 3: methode keuze */}}
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:160px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:.88rem;cursor:pointer">
+          <input type="radio" name="method_{{ i }}" value="url" checked
+            onchange="showUrl({{ i }})"> URL ophalen
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.88rem;cursor:pointer">
+          <input type="radio" name="method_{{ i }}" value="upload"
+            onchange="showUpload({{ i }})"> Document uploaden
+        </label>
+      </div>
+
+    </div>
     {% endfor %}
 
-    <div class="form-actions" style="margin-top:24px">
+    <div style="margin-top:24px">
       <button type="submit">Geselecteerde items importeren</button>
     </div>
   </form>
 </section>
 
 <script>
-document.querySelectorAll('.method-option input[type=radio]').forEach(function(r) {
-  r.addEventListener('change', function() {
-    var row = this.closest('.import-controls');
-    var isUpload = this.value === 'upload';
-    row.querySelector('.import-upload-field').style.display = isUpload ? 'block' : 'none';
-    row.querySelector('.import-url-display').style.display = isUpload ? 'none' : 'block';
-  });
-});
+function showUrl(i) {
+  document.querySelector('.import-url-' + i).style.display = 'block';
+  document.querySelector('.import-file-' + i).style.display = 'none';
+}
+function showUpload(i) {
+  document.querySelector('.import-url-' + i).style.display = 'none';
+  document.querySelector('.import-file-' + i).style.display = 'block';
+}
 </script>
 {% endblock %}
