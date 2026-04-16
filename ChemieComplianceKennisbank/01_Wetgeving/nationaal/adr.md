@@ -1,0 +1,381 @@
+---
+titel: ADR
+datum: 2026-04-16
+jurisdictie: nationaal
+onderwerp: transport
+bron: "https://www.rijksoverheid.nl/onderwerpen/gevaarlijke-stoffen"
+bronbestand: 05_Bronnen/interne_documenten/adr.txt
+status: actief
+tags: [adr, transport, gevaarlijke-stoffen]
+categorieen: [transport]
+samenvatting: "Gevaarlijke stoffen | Rijksoverheid.nl --> Ga direct naar inhoud Rijksoverheid U bevindt zich hier: Home Onderwerpen Gevaarlijke stoffen Zoeken binnen Rijksoverheid.nl Zoek Beeld: Riesjard Schropp Gevaarlijke stoffen en risicovolle bedrijven Etiketten gevaarlijke stoffen Ongeval…"
+---
+
+# Wetgeving
+
+## Onderwerp
+ADR
+
+## Reikwijdte
+Nog te valideren op basis van de brontekst.
+
+## Relevantie voor het bedrijf
+Nog aan te vullen na inhoudelijke beoordeling.
+
+## Categorieen
+- transport
+
+## Kernverplichtingen
+- Nog aan te vullen
+
+## Toetsingspunten
+- Nog aan te vullen
+
+## Bronnen
+- Upload: `05_Bronnen/interne_documenten/adr.txt`
+
+## Geextraheerde brontekst
+Gevaarlijke stoffen | Rijksoverheid.nl 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ -->
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+
+ 
+ Ga direct naar inhoud 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ Rijksoverheid 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ U bevindt zich hier: 
+ Home 
+ Onderwerpen 
+ Gevaarlijke stoffen 
+ 
+ 
+ 
+ Zoeken binnen Rijksoverheid.nl 
+ 
+ 
+ Zoek 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Beeld: Riesjard Schropp 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Gevaarlijke stoffen en risicovolle bedrijven 
+ Etiketten gevaarlijke stoffen 
+ Ongevallen met gevaarlijke stoffen voorkomen in de leefomgeving 
+ Vervoer van gevaarlijke stoffen 
+ Nieuws 
+ Vraag en antwoord 
+ Documenten 
+ 
+ 
+ 
+ 
+ 
+ Gevaarlijke stoffen 
+ 
+ 
+ Vraag en antwoord 
+ 
+ 
+ 
+ Kan ik in aanraking komen met gevaarlijke stoffen? 
+ 
+ 
+ 
+ Wat is REACH? 
+ 
+ 
+ 
+ 
+ 
+ Wat is externe veiligheid en hoe weet ik of er risico’s zijn in mijn woonomgeving? 
+ 
+ 
+ Meer vragen en antwoorden 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Uitgelicht 
+ 
+
+ 
+ Modernisering milieubeleid 
+ 
+ 
+ 
+
+ 
+ 
+ Beeld: &copy; ANP 
+ 
+ 
+ 
+ 
+ 
+ De milieu-uitdagingen van de 21e eeuw vragen om een moderne aanpak. Daarom moderniseert het kabinet het milieubeleid. 
+ 
+ 
+ 
+ 
+ 
+ 
+ Nieuws 
+
+ 
+ 
+ Abonneren op nieuws over dit onderwerp 
+ 
+ 
+ 
+ 
+
+ TSB-regeling uitgebreid met 3 nieuwe beroepsziekten 
+ 
+ 
+ 30-06-2025 | 16:00 
+ 
+ De regeling Tegemoetkoming Stoffengerelateerde Beroepsziekten (TSB-regeling) is per 1 juli uitgebreid met 3 nieuwe ziekten. De ... 
+ 
+ 
+
+ 
+
+ 
+ 
+ 
+
+ Nieuwe regels voor werken met voor de voortplanting gevaarlijke stoffen 
+ 
+ 
+ 23-05-2024 | 12:53 
+ 
+ Vanaf deze week gelden nieuwe regels voor het werken met stoffen die gevaarlijk zijn voor de voortplanting. Dat zijn stoffen die ... 
+ 
+ 
+
+ 
+
+ 
+ 
+ 
+
+ Internationaal schadefonds voor ongevallen op zee met gevaarlijke stoffen stap dichterbij 
+ 
+ 
+ 25-11-2022 | 16:15 
+ 
+ Het kabinet heeft ingestemd met een wetsvoorstel om een internationaal verdrag over het vervoer van gevaarlijke en schadelijke ... 
+ 
+ 
+
+ 
+
+ Meer nieuws 
+
+ 
+
+ 
+
+ 
+ Zie ook 
+
+ 
+ 
+ 
+ Asbest 
+ 
+ Onderwerp 
+ 
+ 
+ 
+ Transport van gevaarlijke stoffen via buisleidingen 
+ 
+ 
+ 
+ 
+ 
+ 
+ Vragen? 
+ Bel Informatie 
+ Rijksoverheid: 
+ 1400 
+ 
+ 
+ 
+ Verantwoordelijk 
+ 
+ Ministerie van Infrastructuur en Waterstaat 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+
+ 
+ De Rijksoverheid. Voor Nederland 
+ 
+
+ 
+ Service 
+ 
+
+ 
+ Contact 
+ 
+ 
+ Abonneren 
+ 
+ 
+ RSS 
+ 
+ 
+ Vacatures 
+ 
+ 
+ Sitemap 
+ 
+ 
+ Help 
+ 
+ 
+ Archief 
+ 
+ 
+ 
+ 
+ Over deze site 
+ 
+
+ 
+ Over Rijksoverheid.nl 
+ 
+ 
+ Copyright 
+ 
+ 
+ Privacy 
+ 
+ 
+ Cookies 
+ 
+ 
+ AI-gebruik 
+ 
+ 
+ Toegankelijkheid 
+ 
+ 
+ Open data 
+ 
+ 
+ Kwetsbaarheid melden 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ Deze website in andere talen: 
+ 
+ 
+ Nederlands 
+ 
+ English 
+ 
+ 
+ Papiamento 
+ 
+ 
+ Papiamentu 
+ 
+ 
+ Nederlandse Gebarentaal

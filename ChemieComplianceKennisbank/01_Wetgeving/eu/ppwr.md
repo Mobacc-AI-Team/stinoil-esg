@@ -1,0 +1,397 @@
+---
+titel: PPWR
+datum: 2026-04-16
+jurisdictie: eu
+onderwerp: verpakking
+bron: "https://environment.ec.europa.eu/topics/waste-and-recycling/packaging-waste_en"
+bronbestand: 05_Bronnen/interne_documenten/ppwr.txt
+status: actief
+tags: [ppwr, verpakking, recycling]
+categorieen: [verpakking]
+samenvatting: Packaging waste - Environment - European Commission Skip to main content en Select your language Close EU official languages bg български es español cs čeština da dansk de Deutsch et eesti el ελληνικά en English fr français ga Gaeilge hr hrvatski it italiano lv latviešu lt lietu…
+---
+
+# Wetgeving
+
+## Onderwerp
+PPWR
+
+## Reikwijdte
+Nog te valideren op basis van de brontekst.
+
+## Relevantie voor het bedrijf
+Nog aan te vullen na inhoudelijke beoordeling.
+
+## Categorieen
+- verpakking
+
+## Kernverplichtingen
+- Nog aan te vullen
+
+## Toetsingspunten
+- Nog aan te vullen
+
+## Bronnen
+- Upload: `05_Bronnen/interne_documenten/ppwr.txt`
+
+## Geextraheerde brontekst
+Packaging waste - Environment - European Commission 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ Skip to main content 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ en Select your language Close EU official languages bg български es español cs čeština da dansk de Deutsch et eesti el ελληνικά en English fr français ga Gaeilge hr hrvatski it italiano lv latviešu lt lietuvių hu magyar mt Malti nl Nederlands pl polski pt português ro română sk slovenčina sl slovenščina fi suomi sv svenska Other languages ru русский uk yкраїнська 
+ 
+ 
+ 
+ Search Search 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ &nbsp; 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ &nbsp; 
+ 
+ 
+ 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ Energy, Climate change, Environment 
+ 
+ 
+ 
+ 
+ Environment 
+ 
+ 
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+
+ Home … Topics Waste and recycling Packaging waste Packaging waste EU rules on packaging and packaging waste, including design and waste management.
+ 
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+
+ 
+ 
+
+ 
+
+ 
+ Overview 
+ 
+
+ Packaging uses large quantities of primary raw materials. Increasing quantities of packaging are generated in the EU while the levels of re-use, collection and recycling remain low. &nbsp;This is a significant barrier to achieving a&nbsp;low-carbon, circular and resilient economy. The Packaging and Packaging Waste Regulation 2025/40 (PPWR) entered into force on 11 February 2025 and will generally apply from 12 August 2026 . The Regulation:&nbsp; covers all packaging and packaging waste, regardless of material or origin sets requirements for manufacturing, composition, and reusable or recoverable nature of all packaging placed on the EU market includes packaging waste management and prevention measures Factsheet - Summary of the Regulation - Facts about packaging and packaging waste © Getty Images, curtoicurto 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 40% of plastics used in the EU are in packaging 1/2 of marine litter is from packaging 186.5 kg of waste generated in the EU per person in 2022 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Page contents
+ Page contents 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ Objectives 
+ 
+ The rules aim to minimise the quantities of packaging and waste generated while lowering the use of primary raw materials and fostering the transition to a circular, sustainable and competitive economy. The Regulation aims to:- Make all packaging on the EU market recyclable in an economically viable way by 2030 . Safely increase the use of recycled plastics in packaging. Decrease the use of virgin materials in packaging and put the sector on track to climate neutrality by 2050 . 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ Law 
+ 
+ The PPWR establishes a new set of requirements in line with Europe's waste rules that cover the entire packaging life cycle – from product design to waste handling, including: Restrictions on certain single-use plastics , such as for individual portions or sachets of condiments and sauces. A requirement for take-away businesses to offer customers the option to bring their own containers at no extra cost. Minimising substances of concern , including restrictions on PFAS in food contact packaging if they exceed certain thresholds. The PPWR was preceded by the Packaging and Packaging Waste Directive 94/62/EC (PPWD) , which will be&nbsp;repealed 18 months after the PPWR enters into force. However, some provisions of the existing regulation will continue to apply even after that date. 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ Related laws Marking and identification Decision establishing the identification system for packaging materials Data and Reporting Directive standardising and rationalising reports on the implementation of certain Directives relating to the environment Decision concerning questionnaires for Member States' reports on the implementation of certain Directives in the waste sector Decision establishing the formats relating to the database system and implementing decision amending this decision Implementing decision laying down the methodology for the calculation of the annual consumption of lightweight plastic carrier bags &nbsp; Derogations Decision exempting certain economic operators that use pallet wrappings and straps from the 100% reuse requirements of these packaging formats Decision establishing the conditions for a derogation for plastic crates and plastic pallets in relation to the heavy metal concentration levels Decision establishing the conditions for a derogation for glass packaging in relation to the heavy metal concentration levels Notification of draft measures Member States intend to implement within the framework of the Packaging Directive Directive laying down a procedure for providing information in the field of technical regulations and rules on Information Society services 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ Implementation 
+ 
+ The European Commission provides support and resources for Member States, businesses and other stakeholders to help them understand and comply with the rules: Information on the implementation of the Packaging and Packaging Waste Regulation (website) including details of national competent authorities Guidelines on the implementation of the Regulation for economic actors and Member States (March 2026) Frequently Asked Questions (March 2026) addressing&nbsp;practical issues raised by stakeholders since the adoption of the PPWR 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ Timeline 
+ 
+ Key dates related to EU policy on packaging 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+
+ 12 August 2026 General application date of PPWR provisions 11 February 2025 PPWR enters into force 30 November 2022 Commission adopted revision of EU rules on Packaging and Packaging Waste Find out more September 2020 - January 2021 Open public consultation on the review of requirements for packaging and other measures to prevent packaging waste See more about&nbsp;the public consultation 30 May 2018 Packaging Directive amended to reinforce prevention and to promote reuse and recycling of packaging waste 29 April 2015 Packaging Directive amended to reduce the consumption of lightweight plastic carrier bags Show 3 more items 20 December 1994 Packaging Directive enters into force 
+
+ 
+
+ 
+ 
+ 
+ 
+ Related links 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ Publications Scoping study to assess the feasibility of further EU measures on waste prevention and implementation of the Plastic Bags Directive. Part II, Implementation of Plastic Bags Directive Report on the effectiveness of the essential requirements for packaging and packaging waste and proposals for reinforcement &nbsp; Report on the relevance of biodegradable and compostable consumer plastic products and packaging in a circular economy Report on the impact of the use of "oxo-degradable" plastic on the environment Learn more about packaging waste and waste management at the Environmental Data Centre on Waste and the European Environmental Agency . Related Main laws: Packaging and Packaging Waste Regulation (2025) ; Packaging and Packaging Waste&nbsp;Directive (1994) Related topics: Circular Economy ;&nbsp; Plastics &nbsp; Plastic bags Related strategies: Circular Economy Action Plan ;&nbsp; Plastics Strategy &nbsp; Single-use plastics Directive Related Commission priorities: European Green Deal 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ Contact 
+ 
+ For questions about EU environmental policy, please contact Europe Direct. 
+
+ 
+
+ 
+
+ 
+ 
+ 
+
+ 
+
+ 
+ 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ News News article 16 April 2026 Ten EU countries exceeding SUPD collection targets The Commission published its first report under the Single-Use Plastics Directive (SUPD), showing Member States&#039; progress. 3 min read News article 9 March 2026 Do nanoplastic particles make up the majority of North Atlantic plastic pollution? Very small pieces of plastic – known as nanoplastic particles – are often under-represented in both research and policy contexts. A study estimates that they may be the dominant form of marine plastic pollution in the North Atlantic. 5 min read News blog 22 January 2026 Pioneering EU solutions for plastic waste Two EU-funded projects are leading the way in lowering plastic waste, increasing circularity and showing that bio-based products are the future. 3 min read See all news on Plastics 
+ 
+
+ 
+
+ 
+
+ 
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Share this page
+ 
+ 
+ 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+
+ 
+ 
+ 
+
+ 
+
+ 
+ 
+ Environment This site is managed by: Directorate-General for Environment Facebook Instagram X YouTube LinkedIn 
+ Contact us Contact DG Environment 
+ About us Accessibility 
+ More information on: Energy, Climate change, Environment 
+ Related links Agriculture Fisheries Climate action Energy European Climate Pact Follow the European Commission Facebook Instagram X Linkedin Other Contact us Report an IT vulnerability Languages on our websites Cookies Privacy policy Legal notice
