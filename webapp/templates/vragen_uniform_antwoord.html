@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Uniform antwoord opstellen · Compliance Kennisbank{% endblock %}
+{% block content %}
+<div class="two-col-layout">
+  <!-- Sidebar: cluster navigatie -->
+  <aside class="sidebar-nav">
+    <div class="eyebrow">Clusters</div>
+    <h3>Selecteer thema</h3>
+    <ul class="cluster-nav-list">
+      {% for cluster in clusters %}
+      <li>
+        <a href="{{ url_for('vragen_uniform_antwoord', tag=cluster.tag) }}"
+           class="cluster-nav-link {% if selected_tag == cluster.tag %}active{% endif %}">
+          <span class="cluster-nav-label">{{ cluster.label }}</span>
+          <span class="pill subtle">{{ cluster.count }}</span>
+        </a>
+      </li>
+      {% else %}
+      <li><span class="case-meta">Geen clusters beschikbaar</span></li>
+      {% endfor %}
+    </ul>
+    <div style="margin-top:1rem;">
+      <a href="{{ url_for('vragen_analyse') }}">&larr; Terug naar analyse</a>
+    </div>
+  </aside>
+
+  <!-- Formulier -->
+  <main class="form-main">
+    <div class="eyebrow">Uniform antwoord</div>
+    <h2>Stel uniform antwoord op</h2>
+    {% if selected_tag %}
+    <p class="page-intro">Je stelt een uniform antwoord op voor het thema: <strong>{{ selected_tag }}</strong></p>
+    {% endif %}
+
+    {% if error %}
+    <div class="notice error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('vragen_uniform_antwoord') }}" class="form-stack">
+      <input type="hidden" name="tag" value="{{ form_values.get('tag', selected_tag) }}">
+
+      <div class="form-field">
+        <label for="titel">Titel <span class="required">*</span></label>
+        <input type="text" id="titel" name="titel" required
+               value="{{ form_values.get('titel', '') }}"
+               placeholder="Bijv. Uniform antwoord: etikettering gevaarlijke stoffen">
+      </div>
+
+      <div class="form-field">
+        <label for="tag-display">Thema / tag</label>
+        <input type="text" id="tag-display" name="tag"
+               value="{{ form_values.get('tag', selected_tag) }}"
+               placeholder="bijv. etikettering">
+        <small>Voer de tag in waarop dit antwoord van toepassing is.</small>
+      </div>
+
+      {% if geselecteerde_vragen %}
+      <fieldset class="form-field">
+        <legend>Vragen in dit cluster
+          <button type="button" class="button-link small" id="select-all-btn">Selecteer alle vragen</button>
+        </legend>
+        <ul class="checkbox-list">
+          {% for doc in geselecteerde_vragen %}
+          <li class="checkbox-item">
+            <label class="checkbox-label">
+              <input type="checkbox" name="geldt_voor" value="{{ doc.rel_path }}"
+                     {% if doc.rel_path in (form_values.getlist('geldt_voor') if form_values else []) %}checked{% endif %}>
+              <span class="checkbox-content">
+                <span class="checkbox-meta">{{ doc.metadata.get('datum', '—') }}
+                  {% if doc.metadata.get('status') %}&middot; <span class="pill subtle">{{ doc.metadata.get('status') }}</span>{% endif %}
+                </span>
+                <strong>{{ doc.title }}</strong>
+                {% if doc.metadata.get('samenvatting') %}
+                <span class="checkbox-samenvatting">{{ doc.metadata.get('samenvatting')[:120] }}{% if doc.metadata.get('samenvatting')|length > 120 %}…{% endif %}</span>
+                {% endif %}
+              </span>
+            </label>
+          </li>
+          {% endfor %}
+        </ul>
+      </fieldset>
+      {% else %}
+      <div class="notice">Geen vragen gevonden voor dit thema. Kies een ander thema in de sidebar.</div>
+      {% endif %}
+
+      <div class="form-field">
+        <label for="antwoord">Standaard antwoord <span class="required">*</span></label>
+        <textarea id="antwoord" name="antwoord" rows="10" required
+                  placeholder="Formuleer hier het uniforme antwoord dat aan alle gekoppelde vragen wordt gegeven...">{{ form_values.get('antwoord', '') }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="onderbouwing">Onderbouwing / wetgeving</label>
+        <textarea id="onderbouwing" name="onderbouwing" rows="5"
+                  placeholder="Bijv. verwijzingen naar relevante wetgeving, normen of richtlijnen...">{{ form_values.get('onderbouwing', '') }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          <option value="concept" {% if form_values.get('status', 'concept') == 'concept' %}selected{% endif %}>Concept</option>
+          <option value="definitief" {% if form_values.get('status') == 'definitief' %}selected{% endif %}>Definitief</option>
+          <option value="gearchiveerd" {% if form_values.get('status') == 'gearchiveerd' %}selected{% endif %}>Gearchiveerd</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="button-primary">Uniform antwoord opslaan</button>
+        <a href="{{ url_for('vragen_analyse') }}" class="button-link secondary">Annuleren</a>
+      </div>
+    </form>
+  </main>
+</div>
+
+<script>
+document.getElementById('select-all-btn')?.addEventListener('click', function() {
+  var checkboxes = document.querySelectorAll('input[name="geldt_voor"]');
+  var allChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
+  checkboxes.forEach(function(cb) { cb.checked = !allChecked; });
+  this.textContent = allChecked ? 'Selecteer alle vragen' : 'Deselecteer alle vragen';
+});
+</script>
+{% endblock %}

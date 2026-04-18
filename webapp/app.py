@@ -42,6 +42,7 @@ SECTION_MAP = {
     "beoordelingen": "03_Beoordelingen",
     "antwoorden": "04_Antwoorden",
     "bronnen": "05_Bronnen",
+    "uniforme_antwoorden": "06_Uniforme_Antwoorden",
     "locaties": "06_Locaties",
     "templates": "07_Templates",
     "index": "08_Index",
@@ -179,6 +180,39 @@ class AuthUser:
     email: str
     role: str
     display_name: str
+
+
+def cluster_vragen(documents: tuple) -> list[dict]:
+    """Groepeert vragen op gedeelde tags. Geeft clusters gesorteerd op grootte."""
+    vragen = [d for d in documents if d.section_key == "vragen"]
+
+    # Tel tags
+    tag_counts: dict[str, list] = defaultdict(list)
+    for doc in vragen:
+        for tag in doc.tags:
+            tag_counts[tag].append(doc)
+
+    # Bouw clusters: alleen tags met >1 vraag zijn interessant
+    clusters = []
+    seen_slugs: set[str] = set()
+
+    # Sorteer op meest voorkomende tag
+    for tag, docs in sorted(tag_counts.items(), key=lambda x: len(x[1]), reverse=True):
+        if len(docs) < 1:
+            continue
+        cluster_slugs = frozenset(d.path.stem for d in docs)
+        # Skip als deze exacte combinatie al gezien
+        if cluster_slugs in seen_slugs:
+            continue
+        seen_slugs.add(cluster_slugs)
+        clusters.append({
+            "tag": tag,
+            "label": tag.replace("-", " ").replace("_", " ").title(),
+            "vragen": sorted(docs, key=lambda d: d.metadata.get("datum", ""), reverse=True),
+            "count": len(docs),
+        })
+
+    return clusters[:20]  # max 20 clusters tonen
 
 
 def create_app() -> Flask:
@@ -625,6 +659,109 @@ def create_app() -> Flask:
             query=query,
         )
 
+    @app.route("/vragen/analyse")
+    def vragen_analyse() -> str:
+        require_login(app.config["DATABASE_URL"])
+        documents = load_documents(kb_root)
+        clusters = cluster_vragen(documents)
+        alle_vragen = [d for d in documents if d.section_key == "vragen"]
+
+        # Laad bestaande uniforme antwoorden
+        uniforme_antwoorden = [d for d in documents if d.section_key == "uniforme_antwoorden"]
+        uniforme_tags = set()
+        for ua in uniforme_antwoorden:
+            for tag in ua.tags:
+                uniforme_tags.add(tag)
+
+        return render_template(
+            "vragen_analyse.html",
+            clusters=clusters,
+            alle_vragen=alle_vragen,
+            uniforme_antwoorden=uniforme_antwoorden,
+            uniforme_tags=uniforme_tags,
+        )
+
+    @app.route("/vragen/uniform-antwoord", methods=["GET", "POST"])
+    def vragen_uniform_antwoord() -> str:
+        require_role(app.config["DATABASE_URL"], {"admin", "editor"})
+
+        if request.method == "POST":
+            titel = request.form.get("titel", "").strip()
+            tag = request.form.get("tag", "").strip()
+            antwoord_tekst = request.form.get("antwoord", "").strip()
+            onderbouwing = request.form.get("onderbouwing", "").strip()
+            geldt_voor = request.form.getlist("geldt_voor")
+            status = request.form.get("status", "concept").strip()
+
+            if not titel or not antwoord_tekst:
+                return render_template("vragen_uniform_antwoord.html",
+                    error="Titel en antwoord zijn verplicht.",
+                    form_values=request.form,
+                    clusters=cluster_vragen(load_documents(kb_root)))
+
+            slug = slugify(titel)
+            import datetime as _dt
+            year = _dt.date.today().strftime("%Y")
+            date_str = _dt.date.today().isoformat()
+
+            # Maak directory aan
+            ua_dir = kb_root / "06_Uniforme_Antwoorden" / year
+            ua_dir.mkdir(parents=True, exist_ok=True)
+
+            filename = f"{date_str}_{slug}_uniform_antwoord.md"
+            filepath = ua_dir / filename
+
+            geldt_voor_str = "[" + ", ".join(f'"{v}"' for v in geldt_voor) + "]"
+
+            content = f"""---
+titel: {titel}
+datum: {date_str}
+type: uniform_antwoord
+tags: [{tag}]
+geldt_voor: {geldt_voor_str}
+status: {status}
+---
+
+# Uniform antwoord: {titel}
+
+## Standaard antwoord
+
+{antwoord_tekst}
+
+## Onderbouwing
+
+{onderbouwing if onderbouwing else "Zie relevante wetgeving in de kennisbank."}
+
+## Van toepassing op
+
+{chr(10).join(f"- {v}" for v in geldt_voor) if geldt_voor else "- Alle vragen met tag: " + tag}
+"""
+            filepath.write_text(content, encoding="utf-8")
+            load_documents.cache_clear()
+            safe_build_indexes(kb_root)
+            return redirect(url_for("vragen_analyse"))
+
+        # GET: haal tag en bijbehorende vragen op
+        tag = request.args.get("tag", "").strip()
+        documents = load_documents(kb_root)
+        clusters = cluster_vragen(documents)
+
+        # Vragen voor geselecteerde tag
+        if tag:
+            geselecteerde_vragen = [d for d in documents
+                                     if d.section_key == "vragen" and tag in d.tags]
+        else:
+            geselecteerde_vragen = [d for d in documents if d.section_key == "vragen"]
+
+        return render_template(
+            "vragen_uniform_antwoord.html",
+            clusters=clusters,
+            geselecteerde_vragen=geselecteerde_vragen,
+            selected_tag=tag,
+            form_values={},
+            error=None,
+        )
+
     return app
 
 
@@ -742,6 +879,7 @@ def section_label(section_key: str) -> str:
         "beoordelingen": "Beoordelingen",
         "antwoorden": "Antwoorden",
         "bronnen": "Bronnen",
+        "uniforme_antwoorden": "Uniforme Antwoorden",
         "locaties": "Locaties",
         "templates": "Templates",
         "index": "Index",

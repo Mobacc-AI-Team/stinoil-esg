@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Vragen analyse · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Vragen analyse</div>
+      <h2>Overeenkomsten in klantvragen</h2>
+      <p class="page-intro">Onderstaande clusters tonen vragen die dezelfde thema's delen. Stel een uniform antwoord op voor een cluster.</p>
+    </div>
+    <div class="action-stack">
+      <a class="button-link" href="{{ url_for('casussen') }}">Terug naar casussen</a>
+    </div>
+  </div>
+
+  {% if clusters %}
+  <div class="cards-grid">
+    {% for cluster in clusters %}
+    <article class="case-card">
+      <div class="case-meta">
+        <span class="pill">{{ cluster.count }} {% if cluster.count == 1 %}vraag{% else %}vragen{% endif %}</span>
+        {% if cluster.tag in uniforme_tags %}
+        <span class="pill success">Uniform antwoord beschikbaar</span>
+        {% endif %}
+      </div>
+      <h3>{{ cluster.label }}</h3>
+      <div class="pill-row">
+        <span class="pill subtle">{{ cluster.tag }}</span>
+      </div>
+      <details class="cluster-details">
+        <summary>{{ cluster.count }} {% if cluster.count == 1 %}vraag{% else %}vragen{% endif %} bekijken</summary>
+        <ul class="cluster-vragen-list">
+          {% for vraag in cluster.vragen %}
+          <li class="cluster-vraag-item">
+            <div class="cluster-vraag-meta">
+              <span class="case-meta">{{ vraag.metadata.get('datum', '—') }}</span>
+              {% if vraag.metadata.get('status') %}
+              <span class="pill subtle">{{ vraag.metadata.get('status') }}</span>
+              {% endif %}
+            </div>
+            <a href="{{ url_for('document_detail', rel_path=vraag.rel_path) }}">{{ vraag.title }}</a>
+            {% if vraag.metadata.get('samenvatting') %}
+            <p class="cluster-vraag-samenvatting">{{ vraag.metadata.get('samenvatting')[:160] }}{% if vraag.metadata.get('samenvatting')|length > 160 %}…{% endif %}</p>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% if cluster.tag not in uniforme_tags %}
+      <div class="card-actions">
+        <a class="button-link" href="{{ url_for('vragen_uniform_antwoord', tag=cluster.tag) }}">Uniform antwoord opstellen &rarr;</a>
+      </div>
+      {% else %}
+      <div class="card-actions">
+        <a class="button-link secondary" href="{{ url_for('vragen_uniform_antwoord', tag=cluster.tag) }}">Nieuw uniform antwoord opstellen</a>
+      </div>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>Geen clusters gevonden. Voeg eerst vragen toe via <a href="{{ url_for('nieuwe_casus') }}">Nieuwe vraag</a>.</p>
+  </div>
+  {% endif %}
+</section>
+
+{% if uniforme_antwoorden %}
+<section class="card" style="margin-top:2rem;">
+  <div class="card-head">
+    <div>
+      <div class="eyebrow">Uniform antwoorden</div>
+      <h2>Alle uniforme antwoorden</h2>
+    </div>
+  </div>
+  <div class="cards-grid">
+    {% for ua in uniforme_antwoorden %}
+    <article class="case-card">
+      <div class="case-meta">{{ ua.metadata.get('datum', '—') }} &middot; <span class="pill subtle">{{ ua.metadata.get('status', 'concept') }}</span></div>
+      <h3><a href="{{ url_for('document_detail', rel_path=ua.rel_path) }}">{{ ua.title }}</a></h3>
+      <div class="pill-row">
+        {% for tag in ua.tags[:4] %}<span class="pill subtle">{{ tag }}</span>{% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<section class="card" style="margin-top:2rem;">
+  <div class="empty-state">
+    <p>Er zijn nog geen uniforme antwoorden opgesteld. Kies een cluster hierboven en stel een uniform antwoord op.</p>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
