@@ -43,7 +43,7 @@
         {{ doc.section_label }}
         {% for tag in doc.tags[:3] %}<span class="pill subtle" style="font-size:.75rem">{{ tag }}</span>{% endfor %}
       </div>
-      <h3><a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a></h3>
+      <h3><a href="{{ url_for('document_detail', rel_path=doc.rel_path, q=filters.query) }}">{{ doc.title }}</a></h3>
       <p>{{ doc.metadata.get('samenvatting', doc.body[:200]) }}</p>
     </li>
     {% else %}

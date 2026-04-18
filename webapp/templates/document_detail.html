@@ -5,16 +5,159 @@
   <aside class="card sidebar">
     <div class="eyebrow">{{ document.section_label }}</div>
     <h2>{{ document.title }}</h2>
+
+    {% if document.metadata.get('samenvatting') %}
+    <p style="font-size:.9rem;color:#555;margin:8px 0 16px">{{ document.metadata.get('samenvatting')[:300] }}{% if document.metadata.get('samenvatting')|length > 300 %}…{% endif %}</p>
+    {% endif %}
+
     <dl class="meta-list">
-      <div><dt>Bestand</dt><dd><code>{{ document.rel_path }}</code></dd></div>
       {% for key, value in document.metadata.items() %}
+      {% if key != 'samenvatting' %}
       <div><dt>{{ key }}</dt><dd>{{ value }}</dd></div>
+      {% endif %}
       {% endfor %}
     </dl>
+
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee">
+      <a href="{{ url_for('wetgeving') }}" style="font-size:.85rem;color:#666">← Terug naar wetgeving</a>
+    </div>
   </aside>
 
   <article class="card article-body">
-    {{ rendered_body|safe }}
+    {# Zoekbalk binnen document #}
+    <div class="doc-search-bar" style="display:flex;gap:8px;align-items:center;margin-bottom:20px;padding:10px 14px;background:#f7f7f8;border-radius:8px;border:1px solid #e0e0e0">
+      <input type="text" id="doc-search-input" placeholder="Zoek in dit document…" value="{{ query }}"
+             style="flex:1;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:.9rem">
+      <button onclick="docSearchNext()" style="padding:6px 12px;background:#c0392b;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.85rem">▼ Volgende</button>
+      <button onclick="docSearchPrev()" style="padding:6px 12px;background:#555;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.85rem">▲ Vorige</button>
+      <span id="doc-search-count" style="font-size:.82rem;color:#888;white-space:nowrap"></span>
+    </div>
+
+    <div id="doc-body">
+      {{ rendered_body|safe }}
+    </div>
   </article>
 </section>
+
+<style>
+  .doc-highlight { background: #fff176; border-radius: 2px; padding: 0 1px; }
+  .doc-highlight.active { background: #ff9800; color: #fff; border-radius: 2px; }
+  .detail-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 768px) { .detail-layout { grid-template-columns: 1fr; } }
+  .sidebar { position: sticky; top: 20px; }
+  .meta-list { margin: 0; }
+  .meta-list div { display: flex; flex-direction: column; margin-bottom: 8px; }
+  .meta-list dt { font-size: .75rem; font-weight: 600; color: #888; text-transform: uppercase; }
+  .meta-list dd { margin: 0; font-size: .88rem; word-break: break-word; }
+  .article-body h1, .article-body h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 6px; margin-top: 24px; }
+  .article-body h3 { margin-top: 18px; color: #333; }
+  .article-body table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  .article-body th { background: #f5f5f5; text-align: left; padding: 8px 10px; font-size: .88rem; }
+  .article-body td { padding: 7px 10px; border-bottom: 1px solid #eee; font-size: .88rem; vertical-align: top; }
+  .article-body code { background: #f5f5f5; padding: 1px 5px; border-radius: 3px; font-size: .87em; }
+  .article-body blockquote { border-left: 3px solid #c0392b; margin: 12px 0; padding: 8px 16px; background: #fafafa; color: #555; }
+</style>
+
+<script>
+(function() {
+  let matches = [];
+  let currentMatch = -1;
+  const input = document.getElementById('doc-search-input');
+  const countEl = document.getElementById('doc-search-count');
+  const body = document.getElementById('doc-body');
+
+  // Store original HTML
+  const originalHTML = body.innerHTML;
+
+  function escapeRegex(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function highlight(term) {
+    // Restore original first
+    body.innerHTML = originalHTML;
+    matches = [];
+    currentMatch = -1;
+
+    if (!term || term.length < 2) {
+      countEl.textContent = '';
+      return;
+    }
+
+    const regex = new RegExp('(' + escapeRegex(term) + ')', 'gi');
+
+    // Walk text nodes only
+    function walkNodes(node) {
+      if (node.nodeType === 3) { // text node
+        const parts = node.textContent.split(regex);
+        if (parts.length > 1) {
+          const frag = document.createDocumentFragment();
+          parts.forEach(function(part) {
+            if (regex.test(part)) {
+              const mark = document.createElement('mark');
+              mark.className = 'doc-highlight';
+              mark.textContent = part;
+              frag.appendChild(mark);
+            } else {
+              frag.appendChild(document.createTextNode(part));
+            }
+            regex.lastIndex = 0;
+          });
+          node.parentNode.replaceChild(frag, node);
+        }
+      } else if (node.nodeType === 1 && !['SCRIPT','STYLE','MARK'].includes(node.tagName)) {
+        Array.from(node.childNodes).forEach(walkNodes);
+      }
+    }
+    walkNodes(body);
+
+    matches = Array.from(body.querySelectorAll('mark.doc-highlight'));
+    countEl.textContent = matches.length > 0 ? matches.length + ' resultaten' : 'Niet gevonden';
+
+    if (matches.length > 0) {
+      currentMatch = 0;
+      activateMatch(0);
+    }
+  }
+
+  function activateMatch(i) {
+    matches.forEach(function(m) { m.classList.remove('active'); });
+    if (matches[i]) {
+      matches[i].classList.add('active');
+      matches[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      countEl.textContent = (i + 1) + ' / ' + matches.length;
+    }
+  }
+
+  window.docSearchNext = function() {
+    if (!matches.length) return;
+    currentMatch = (currentMatch + 1) % matches.length;
+    activateMatch(currentMatch);
+  };
+
+  window.docSearchPrev = function() {
+    if (!matches.length) return;
+    currentMatch = (currentMatch - 1 + matches.length) % matches.length;
+    activateMatch(currentMatch);
+  };
+
+  // Live search while typing
+  let debounce;
+  input.addEventListener('input', function() {
+    clearTimeout(debounce);
+    debounce = setTimeout(function() { highlight(input.value.trim()); }, 250);
+  });
+
+  // Enter key = next match
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.shiftKey ? docSearchPrev() : docSearchNext(); }
+  });
+
+  // Auto-highlight if query param present
+  const q = "{{ query|e }}";
+  if (q && q.length >= 2) {
+    highlight(q);
+  }
+})();
+</script>
 {% endblock %}

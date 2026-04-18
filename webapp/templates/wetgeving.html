@@ -63,7 +63,7 @@
       <tbody>
         {% for doc in docs %}
         <tr>
-          <td><a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a></td>
+          <td><a href="{{ url_for('document_detail', rel_path=doc.rel_path, q=query) }}">{{ doc.title }}</a></td>
           <td>{{ doc.metadata.get('onderwerp', '—') }}</td>
           <td>
             {% for cat in doc.categories[:3] %}

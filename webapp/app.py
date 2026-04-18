@@ -617,10 +617,12 @@ def create_app() -> Flask:
         if kb_root not in [target, *target.parents] or not target.is_file():
             abort(404)
         record = document_from_file(kb_root, target)
+        query = request.args.get("q", "").strip()
         return render_template(
             "document_detail.html",
             document=record,
             rendered_body=markdown_to_html(record.body),
+            query=query,
         )
 
     return app
