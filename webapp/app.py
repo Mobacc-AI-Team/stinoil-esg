@@ -84,6 +84,21 @@ SOURCE_FOLDER_MAP = {
     ".md": "interne_documenten",
 }
 
+WETGEVING_SUGGESTIES = [
+    {"naam": "NPR 7910 – Veiligheidsmanagementsysteem / RI&E methodiek", "thema": "normen_en_richtlijnen", "type": "norm", "url": "https://www.nen.nl/npr-7910", "beschrijving": "Nederlandse praktijkrichtlijn voor risico-inventarisatie en -evaluatie (RI&E) in de arbosector."},
+    {"naam": "Biocidenverordening (EU) 528/2012", "thema": "chemie", "type": "eu_verordening", "url": "https://eur-lex.europa.eu/legal-content/NL/TXT/?uri=CELEX:32012R0528", "beschrijving": "Reguleert biociden (desinfectiemiddelen, conserveermiddelen) in de EU. Relevant voor reinigers en desinfectantia in aerosolproducten."},
+    {"naam": "F-gassen verordening (EU) 517/2014", "thema": "chemie", "type": "eu_verordening", "url": "https://eur-lex.europa.eu/legal-content/NL/TXT/?uri=CELEX:32014R0517", "beschrijving": "Reguleert gefluoreerde broeikasgassen (HFK's). Van belang voor drijfgassen in aerosolspuitbussen."},
+    {"naam": "Cosmeticaverordening (EU) 1223/2009", "thema": "chemie", "type": "eu_verordening", "url": "https://eur-lex.europa.eu/legal-content/NL/TXT/?uri=CELEX:32009R1223", "beschrijving": "Eisen aan samenstelling, etikettering en veiligheid van cosmetische producten. Relevant voor cosmetische aerosolproducten."},
+    {"naam": "RoHS Richtlijn 2011/65/EU – Gevaarlijke stoffen in elektrische apparatuur", "thema": "eu", "type": "eu_richtlijn", "url": "https://eur-lex.europa.eu/legal-content/NL/TXT/?uri=CELEX:32011L0065", "beschrijving": "Beperkt gebruik van gevaarlijke stoffen (lood, kwik, cadmium etc.) in elektrische en elektronische apparatuur."},
+    {"naam": "Omgevingswet – Wet van 23 maart 2016", "thema": "nationaal", "type": "wet", "url": "https://wetten.overheid.nl/BWBR0037885", "beschrijving": "Integreert 26 wetten voor de fysieke leefomgeving. Vervangt o.a. de Wet milieubeheer voor omgevingsvergunningen en milieuregels."},
+    {"naam": "Wet milieubeheer (Wm)", "thema": "nationaal", "type": "wet", "url": "https://wetten.overheid.nl/BWBR0003245", "beschrijving": "Basiswet voor milieubescherming in Nederland. Regelt o.a. afvalstoffenbeheer, luchtkwaliteit en milieueffectrapportage."},
+    {"naam": "ZZS Lijst – Zeer Zorgwekkende Stoffen (RIVM)", "thema": "nationaal", "type": "lijst", "url": "https://www.rivm.nl/zzs", "beschrijving": "Nederlandse lijst van stoffen die bijzonder schadelijk zijn voor mens en milieu. Bedrijven moeten emissies minimaliseren en rapporteren."},
+    {"naam": "SVHC Kandidatenlijst (REACH Annex XIV)", "thema": "chemie", "type": "lijst", "url": "https://echa.europa.eu/nl/candidate-list-table", "beschrijving": "ECHA-lijst van Substances of Very High Concern (SVHC). Producenten moeten klanten en consumenten informeren bij >0,1 gew%."},
+    {"naam": "Ozonlaagverordening (EU) 1005/2009", "thema": "chemie", "type": "eu_verordening", "url": "https://eur-lex.europa.eu/legal-content/NL/TXT/?uri=CELEX:32009R1005", "beschrijving": "Verbiedt en beperkt gebruik van ozonlaagafbrekende stoffen. Relevant voor drijfgassen in aerosolspuitbussen."},
+    {"naam": "Drinkwaterwet", "thema": "nationaal", "type": "wet", "url": "https://wetten.overheid.nl/BWBR0026338", "beschrijving": "Regels voor de kwaliteit van drinkwater. Relevant bij productieprocessen waarbij drinkwater wordt gebruikt."},
+    {"naam": "Wet bodembescherming (Wbb)", "thema": "nationaal", "type": "wet", "url": "https://wetten.overheid.nl/BWBR0003994", "beschrijving": "Beschermt de bodemkwaliteit bij opslag en gebruik van gevaarlijke stoffen. Relevant voor opslagtanks en chemische opslag."},
+]
+
 
 @dataclass
 class DocumentRecord:
@@ -445,6 +460,65 @@ def create_app() -> Flask:
             return render_template("wetgeving_importeer.html", register=WETGEVING_REGISTER, results=results)
         existing_slugs = {doc.path.stem for doc in load_documents(kb_root) if doc.section_key == "wetgeving"}
         return render_template("wetgeving_importeer.html", register=WETGEVING_REGISTER, results=[], existing_slugs=existing_slugs)
+
+    @app.route("/wetgeving/suggesties", methods=["GET", "POST"])
+    def wetgeving_suggesties() -> str:
+        require_login(app.config["DATABASE_URL"])
+        results: list[dict] = []
+        existing_titles = {doc.title.lower() for doc in load_documents(kb_root) if doc.section_key == "wetgeving"}
+        existing_slugs = {doc.path.stem for doc in load_documents(kb_root) if doc.section_key == "wetgeving"}
+
+        if request.method == "POST":
+            indices = [int(k.split("_")[1]) for k in request.form if k.startswith("item_")]
+            for i in indices:
+                if i >= len(WETGEVING_SUGGESTIES):
+                    continue
+                item = WETGEVING_SUGGESTIES[i]
+                try:
+                    path = create_regulation_record_from_url(
+                        kb_root=kb_root,
+                        source_url=item["url"],
+                        title=item["naam"],
+                        jurisdiction=item["thema"],
+                        subject=item["thema"],
+                        tags=f"{item['thema']},{slugify(item['naam'])}",
+                        categories=item["thema"],
+                        source_label=item["url"],
+                    )
+                    results.append({"naam": item["naam"], "status": "ok", "bericht": path.name})
+                except Exception as exc:
+                    results.append({"naam": item["naam"], "status": "fout", "bericht": str(exc)})
+            load_documents.cache_clear()
+            safe_build_indexes(kb_root)
+            # Refresh existing after import
+            existing_titles = {doc.title.lower() for doc in load_documents(kb_root) if doc.section_key == "wetgeving"}
+
+        suggesties_met_status = []
+        for i, item in enumerate(WETGEVING_SUGGESTIES):
+            aanwezig = (item["naam"].lower() in existing_titles or
+                        slugify(item["naam"]) in existing_slugs)
+            suggesties_met_status.append({**item, "index": i, "aanwezig": aanwezig})
+
+        return render_template("wetgeving_suggesties.html", suggesties=suggesties_met_status, results=results)
+
+    @app.route("/api/wetgeving-updates", methods=["GET"])
+    def wetgeving_updates():
+        """Kan worden aangeroepen via cron of handmatig. Controleert of wetgeving-URL's nog bereikbaar zijn."""
+        import urllib.request
+        docs = [doc for doc in load_documents(kb_root) if doc.section_key == "wetgeving"]
+        results = []
+        for doc in docs:
+            bron_url = doc.metadata.get("bron_url") or doc.metadata.get("bron", "")
+            if not bron_url.startswith("http"):
+                continue
+            try:
+                req = urllib.request.Request(bron_url, headers={"User-Agent": "Mozilla/5.0"})
+                resp = urllib.request.urlopen(req, timeout=5)
+                status = resp.status
+            except Exception as e:
+                status = f"FOUT: {e}"
+            results.append({"titel": doc.title, "url": bron_url, "status": status})
+        return {"gecontroleerd": len(results), "resultaten": results}
 
     @app.route("/casussen")
     def casussen() -> str:

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Suggesties: ontbrekende wetgeving · Compliance Kennisbank{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Wetgeving</div>
+      <h2>Suggesties: ontbrekende wetgeving</h2>
+      <p class="muted">Onderstaande wetgeving is nog niet in de kennisbank maar is relevant voor chemische compliance.</p>
+    </div>
+    <div class="action-row">
+      <a class="button-link subtle" href="{{ url_for('wetgeving') }}">← Terug naar wetgeving</a>
+    </div>
+  </div>
+
+  {% if results %}
+  <div class="notice-block">
+    {% for r in results %}
+    <div class="notice {% if r.status == 'ok' %}success{% else %}error{% endif %}" style="margin-bottom:.4rem">
+      {% if r.status == 'ok' %}
+      <span class="pill success" style="font-size:.78rem">OK</span>
+      {% else %}
+      <span class="pill error" style="font-size:.78rem">FOUT</span>
+      {% endif %}
+      <strong>{{ r.naam }}</strong> — {{ r.bericht }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('wetgeving_suggesties') }}">
+    <div style="margin-bottom:1rem">
+      <button type="button" onclick="selecteerOntbrekende()" class="button-link subtle">Selecteer alle ontbrekende</button>
+      <button type="submit" class="button-link" style="margin-left:.5rem">Geselecteerde items importeren</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:2.5rem"></th>
+          <th style="width:35%">Naam</th>
+          <th style="width:8rem">Type</th>
+          <th>Beschrijving</th>
+          <th style="width:8rem">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in suggesties %}
+        <tr>
+          <td style="text-align:center">
+            {% if s.aanwezig %}
+            <input type="checkbox" name="item_{{ s.index }}" disabled>
+            {% else %}
+            <input type="checkbox" name="item_{{ s.index }}" class="ontbrekend-checkbox">
+            {% endif %}
+          </td>
+          <td>
+            <strong>{{ s.naam }}</strong><br>
+            <a href="{{ s.url }}" target="_blank" rel="noopener" style="font-size:.8rem;color:var(--color-muted)">{{ s.url }}</a>
+          </td>
+          <td>
+            <span class="pill subtle" style="font-size:.75rem">{{ s.type | replace('_', ' ') }}</span>
+          </td>
+          <td style="font-size:.88rem">{{ s.beschrijving }}</td>
+          <td>
+            {% if s.aanwezig %}
+            <span class="pill success" style="font-size:.78rem">Al aanwezig</span>
+            {% else %}
+            <span class="pill error" style="font-size:.78rem">Ontbreekt</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="margin-top:1rem">
+      <button type="submit" class="button-link">Geselecteerde items importeren</button>
+    </div>
+  </form>
+</section>
+
+<script>
+function selecteerOntbrekende() {
+  document.querySelectorAll('.ontbrekend-checkbox').forEach(function(cb) {
+    cb.checked = true;
+  });
+}
+</script>
+{% endblock %}
