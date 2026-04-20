@@ -443,57 +443,193 @@ def create_app() -> Flask:
 
         return render_template("wetgeving_upload.html", themas=WETGEVING_THEMAS)
 
+    @app.route("/wetgeving/verversen/<path:rel_path>", methods=["POST"])
+    def wetgeving_verversen(rel_path: str) -> str:
+        require_role(app.config["DATABASE_URL"], {"admin", "editor"})
+        safe_rel = Path(rel_path)
+        target = (kb_root / safe_rel).resolve()
+        if kb_root not in [target, *target.parents] or not target.is_file():
+            abort(404)
+
+        # Lees huidige metadata
+        metadata, _ = split_frontmatter(target.read_text(encoding="utf-8"))
+        bron_url = metadata.get("bron_url") or metadata.get("bron", "")
+
+        if not bron_url.startswith("http"):
+            return redirect(url_for("wetgeving_importeer", status="geen_url"))
+
+        try:
+            import urllib.request as _ur
+            req = _ur.Request(bron_url, headers={"User-Agent": "Mozilla/5.0"})
+            resp = _ur.urlopen(req, timeout=10)
+            raw = resp.read()
+            content_type = resp.headers.get("Content-Type", "")
+            if "html" in content_type:
+                text = strip_html_to_text(raw.decode("utf-8", errors="replace"))
+            else:
+                text = raw.decode("utf-8", errors="replace")
+
+            # Update bestand: vervang body maar behoud frontmatter, update datum
+            import datetime as _dt
+            metadata["datum"] = _dt.date.today().isoformat()
+
+            fm_lines = ["---"]
+            for k, v in metadata.items():
+                fm_lines.append(f"{k}: {yaml_escape(str(v))}")
+            fm_lines.append("---")
+            fm_lines.append("")
+
+            new_content = "\n".join(fm_lines) + "\n" + text[:8000]
+            target.write_text(new_content, encoding="utf-8")
+            load_documents.cache_clear()
+            safe_build_indexes(kb_root)
+            return redirect(url_for("wetgeving_importeer", status="ververst"))
+        except Exception as exc:
+            return redirect(url_for("wetgeving_importeer", status=f"fout:{str(exc)[:60]}"))
+
     @app.route("/wetgeving/importeer", methods=["GET", "POST"])
     def wetgeving_importeer() -> str:
-        require_role(app.config["DATABASE_URL"], {"admin", "editor"})
+        require_login(app.config["DATABASE_URL"])
         results: list[dict] = []
+        status = request.args.get("status", "").strip()
+
         if request.method == "POST":
-            existing = {doc.path.stem for doc in load_documents(kb_root) if doc.section_key == "wetgeving"}
-            for i, item in enumerate(WETGEVING_REGISTER):
-                if not request.form.get(f"item_{i}"):
-                    continue
-                method = request.form.get(f"method_{i}", "url")
-                titel = item["naam"]
-                thema = item["thema"]
-                tags = f"{thema},{slugify(titel)}"
-                categories = thema
-                try:
-                    if method == "url":
-                        path = create_regulation_record_from_url(
+            action = request.form.get("action", "import_register")
+
+            if action == "add_url":
+                # Nieuw document via URL toevoegen
+                bron_url = request.form.get("bron_url", "").strip()
+                titel = request.form.get("titel", "").strip()
+                thema = request.form.get("thema", "").strip()
+                tags = request.form.get("tags", "").strip()
+                if not bron_url:
+                    status = "geen_url"
+                else:
+                    try:
+                        create_regulation_record_from_url(
                             kb_root=kb_root,
-                            source_url=item["url"],
-                            title=titel,
+                            source_url=bron_url,
+                            title=titel or bron_url,
                             jurisdiction=thema,
                             subject=thema,
                             tags=tags,
-                            categories=categories,
-                            source_label=item["url"],
+                            categories=thema,
+                            source_label=bron_url,
                         )
-                        results.append({"naam": titel, "status": "ok", "bericht": path.name})
-                    else:
-                        upload = request.files.get(f"bestand_{i}")
-                        if not upload or not upload.filename:
-                            results.append({"naam": titel, "status": "overgeslagen", "bericht": "Geen bestand geüpload"})
-                            continue
-                        path = create_regulation_record_from_upload(
+                        load_documents.cache_clear()
+                        safe_build_indexes(kb_root)
+                        status = "toegevoegd"
+                    except Exception as exc:
+                        status = f"fout:{str(exc)[:60]}"
+
+            elif action == "add_bestand":
+                # Nieuw document via bestand toevoegen
+                upload = request.files.get("bestand")
+                titel = request.form.get("titel", "").strip()
+                thema = request.form.get("thema", "").strip()
+                tags = request.form.get("tags", "").strip()
+                if not upload or not upload.filename:
+                    status = "geen_bestand"
+                else:
+                    try:
+                        create_regulation_record_from_upload(
                             kb_root=kb_root,
                             upload_name=upload.filename,
                             binary_content=upload.read(),
-                            title=titel,
+                            title=titel or upload.filename,
                             jurisdiction=thema,
                             subject=thema,
                             tags=tags,
-                            categories=categories,
-                            source_label=titel,
+                            categories=thema,
+                            source_label=titel or upload.filename,
                         )
-                        results.append({"naam": titel, "status": "ok", "bericht": path.name})
-                except Exception as exc:
-                    results.append({"naam": titel, "status": "fout", "bericht": str(exc)})
-            load_documents.cache_clear()
-            safe_build_indexes(kb_root)
-            return render_template("wetgeving_importeer.html", register=WETGEVING_REGISTER, results=results)
+                        load_documents.cache_clear()
+                        safe_build_indexes(kb_root)
+                        status = "toegevoegd"
+                    except Exception as exc:
+                        status = f"fout:{str(exc)[:60]}"
+
+            else:
+                # Bestaand import-register gedrag
+                existing = {doc.path.stem for doc in load_documents(kb_root) if doc.section_key == "wetgeving"}
+                for i, item in enumerate(WETGEVING_REGISTER):
+                    if not request.form.get(f"item_{i}"):
+                        continue
+                    method = request.form.get(f"method_{i}", "url")
+                    titel = item["naam"]
+                    thema = item["thema"]
+                    tags = f"{thema},{slugify(titel)}"
+                    try:
+                        if method == "url":
+                            path = create_regulation_record_from_url(
+                                kb_root=kb_root, source_url=item["url"], title=titel,
+                                jurisdiction=thema, subject=thema, tags=tags,
+                                categories=thema, source_label=item["url"],
+                            )
+                            results.append({"naam": titel, "status": "ok", "bericht": path.name})
+                        else:
+                            upload = request.files.get(f"bestand_{i}")
+                            if not upload or not upload.filename:
+                                results.append({"naam": titel, "status": "overgeslagen", "bericht": "Geen bestand"})
+                                continue
+                            path = create_regulation_record_from_upload(
+                                kb_root=kb_root, upload_name=upload.filename,
+                                binary_content=upload.read(), title=titel,
+                                jurisdiction=thema, subject=thema, tags=tags,
+                                categories=thema, source_label=titel,
+                            )
+                            results.append({"naam": titel, "status": "ok", "bericht": path.name})
+                    except Exception as exc:
+                        results.append({"naam": titel, "status": "fout", "bericht": str(exc)})
+                load_documents.cache_clear()
+                safe_build_indexes(kb_root)
+
+        # Laad bestaande wetgeving voor het overzicht
+        import datetime as _dt
+        today = _dt.date.today()
+        bestaande_docs = []
+        for doc in load_documents(kb_root):
+            if doc.section_key != "wetgeving":
+                continue
+            datum_str = doc.metadata.get("datum", "")
+            try:
+                datum = _dt.date.fromisoformat(datum_str)
+                leeftijd_dagen = (today - datum).days
+            except Exception:
+                datum = None
+                leeftijd_dagen = 999
+
+            if leeftijd_dagen <= 90:
+                versheid = "recent"
+            elif leeftijd_dagen <= 365:
+                versheid = "oud"
+            else:
+                versheid = "verouderd"
+
+            heeft_url = doc.metadata.get("bron_url", "").startswith("http") or \
+                        doc.metadata.get("bron", "").startswith("http")
+
+            bestaande_docs.append({
+                "doc": doc,
+                "datum": datum_str,
+                "leeftijd_dagen": leeftijd_dagen,
+                "versheid": versheid,
+                "heeft_url": heeft_url,
+            })
+
+        bestaande_docs.sort(key=lambda x: x["leeftijd_dagen"], reverse=True)
+
         existing_slugs = {doc.path.stem for doc in load_documents(kb_root) if doc.section_key == "wetgeving"}
-        return render_template("wetgeving_importeer.html", register=WETGEVING_REGISTER, results=[], existing_slugs=existing_slugs)
+
+        return render_template(
+            "wetgeving_importeer.html",
+            register=WETGEVING_REGISTER,
+            results=results,
+            existing_slugs=existing_slugs,
+            bestaande_docs=bestaande_docs,
+            themas=WETGEVING_THEMAS,
+            status=status,
+        )
 
     @app.route("/wetgeving/suggesties", methods=["GET", "POST"])
     def wetgeving_suggesties() -> str:
