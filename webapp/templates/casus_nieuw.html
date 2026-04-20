@@ -44,8 +44,8 @@
       <input type="text" name="bron" value="{{ form_values.get('bron', '') }}" placeholder="Bijvoorbeeld: e-mail, telefoonnotitie, Teams">
     </label>
     <label>
-      <span>Bestand uploaden</span>
-      <input type="file" name="bestand" accept=".pdf,.docx,.txt,.md">
+      <span>Bestanden uploaden <span style="font-weight:400;color:var(--muted)">(meerdere tegelijk mogelijk)</span></span>
+      <input type="file" name="bestand" accept=".pdf,.docx,.txt,.md" multiple>
     </label>
     <label class="full-width">
       <span>Vraagtekst / geplakte e-mail</span>

@@ -720,8 +720,34 @@ def create_app() -> Flask:
         ensure_case_directories(kb_root)
         if request.method == "POST":
             try:
-                upload = request.files.get("bestand")
+                uploads = [f for f in request.files.getlist("bestand") if f and f.filename]
                 action = request.form.get("actie", "preview").strip()
+
+                # Combineer meerdere bestanden tot één tekst-payload
+                if len(uploads) > 1:
+                    parts: list[str] = []
+                    names: list[str] = []
+                    for uf in uploads:
+                        names.append(uf.filename)
+                        try:
+                            tmp = write_temp_upload(uf.filename, uf.read())
+                            parts.append(extract_text_from_file(tmp))
+                            tmp.unlink(missing_ok=True)
+                        except Exception:
+                            pass
+                    combined = "\n\n---\n\n".join(p for p in parts if p)
+                    upload_name = ", ".join(names)
+                    upload_content = combined.encode("utf-8") if combined else b""
+                    # Gebruik een .txt extensie zodat extract_text_from_file het direct doorgeeft
+                    if upload_name:
+                        upload_name = upload_name + " [gecombineerd].txt"
+                elif len(uploads) == 1:
+                    upload_name = uploads[0].filename
+                    upload_content = uploads[0].read()
+                else:
+                    upload_name = request.form.get("upload_name", "").strip()
+                    upload_content = decode_hidden_bytes(request.form.get("upload_content", ""))
+
                 form_payload = {
                     "afzender_type": request.form.get("afzender_type", "").strip(),
                     "organisatie": request.form.get("organisatie", "").strip(),
@@ -731,8 +757,8 @@ def create_app() -> Flask:
                     "tags": request.form.get("tags", "").strip(),
                     "categories": request.form.get("categorieen", "").strip(),
                     "bron": request.form.get("bron", "").strip(),
-                    "upload_name": upload.filename if upload and upload.filename else request.form.get("upload_name", "").strip(),
-                    "upload_content": upload.read() if upload and upload.filename else decode_hidden_bytes(request.form.get("upload_content", "")),
+                    "upload_name": upload_name,
+                    "upload_content": upload_content,
                 }
 
                 if action == "preview":
