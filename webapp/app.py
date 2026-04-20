@@ -1662,7 +1662,9 @@ Geef je beoordeling in dit exacte JSON-formaat (geen extra tekst erbuiten):
             },
             timeout=30,
         )
-        resp.raise_for_status()
+        if not resp.ok:
+            err_body = resp.text[:300]
+            return {"fout": f"AI-toetsing mislukt ({resp.status_code}): {err_body}"}
         raw = resp.json()["content"][0]["text"].strip()
         # Strip eventuele markdown code fences
         if raw.startswith("```"):
@@ -1671,7 +1673,7 @@ Geef je beoordeling in dit exacte JSON-formaat (geen extra tekst erbuiten):
         import json as _json
         return _json.loads(raw)
     except Exception as exc:
-        return {"fout": f"AI-toetsing mislukt: {str(exc)[:120]}"}
+        return {"fout": f"AI-toetsing mislukt: {str(exc)[:200]}"}
 
 
 def draft_concept_answer(
