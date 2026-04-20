@@ -18,15 +18,23 @@
               <p class="site-subtitle">Wetgeving bewaken · Vragen rubriceren · Uniform beantwoorden</p>
             </div>
           </a>
+          <form method="get" action="{{ url_for('zoek') }}" class="header-search">
+            <input type="text" name="q" placeholder="Zoek in alles…"
+                   value="{{ request.args.get('q', '') }}"
+                   autocomplete="off">
+            <button type="submit" aria-label="Zoeken">
+              <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </form>
         </div>
         <nav class="main-nav">
           <a href="{{ url_for('wetgeving') }}">Wetgeving</a>
-          <a href="{{ url_for('wetgeving_upload') }}">Upload</a>
-          <a href="{{ url_for('wetgeving_importeer') }}">Importeer</a>
+          <a href="{{ url_for('wetgeving_importeer') }}">Beheer</a>
           <a href="{{ url_for('nieuwe_casus') }}">Nieuwe vraag</a>
-          <a href="{{ url_for('vragen_analyse') }}">Analyse</a>
           <a href="{{ url_for('casussen') }}">Casussen</a>
-          <a href="{{ url_for('zoek') }}">Zoeken</a>
+          <a href="{{ url_for('vragen_analyse') }}">Uniforme antwoorden</a>
           {% if current_user %}
           <a href="{{ url_for('logout') }}">Uitloggen</a>
           {% elif database_configured %}
