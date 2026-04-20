@@ -1,163 +1,225 @@
 {% extends 'base.html' %}
 {% block title %}{{ document.title }} · Compliance Control{% endblock %}
 {% block content %}
-<section class="detail-layout">
-  <aside class="card sidebar">
-    <div class="eyebrow">{{ document.section_label }}</div>
-    <h2>{{ document.title }}</h2>
 
-    {% if document.metadata.get('samenvatting') %}
-    <p style="font-size:.9rem;color:#555;margin:8px 0 16px">{{ document.metadata.get('samenvatting')[:300] }}{% if document.metadata.get('samenvatting')|length > 300 %}…{% endif %}</p>
+{# ── Zoekbalk ── #}
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">
+  <input type="text" id="doc-search-input" placeholder="Zoek in dit document…" value="{{ query }}"
+         style="flex:1;max-width:420px;padding:9px 13px;border:1px solid var(--line);border-radius:8px;font-size:.88rem">
+  <button onclick="docSearchNext()" style="padding:9px 14px;font-size:.82rem;border-radius:8px">▼ Volgende</button>
+  <button onclick="docSearchPrev()" style="padding:9px 14px;font-size:.82rem;border-radius:8px;background:var(--ink-soft)">▲ Vorige</button>
+  <span id="doc-search-count" style="font-size:.82rem;color:var(--muted);white-space:nowrap"></span>
+  <a href="javascript:history.back()" style="margin-left:auto;font-size:.83rem;color:var(--muted)">← Terug</a>
+</div>
+
+<div id="doc-body" class="doc-layout-{{ document.section_key }}">
+
+{# ══════════════════════════════════════════
+   ANTWOORDEN & VRAGEN — kaartlayout
+   ══════════════════════════════════════════ #}
+{% if document.section_key in ['antwoorden', 'vragen', 'beoordelingen'] %}
+
+  {# Bovenste balk: type + status + tags #}
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+    <span class="pill" style="background:var(--surface-mid);color:var(--ink-soft);border-color:var(--line);font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em">
+      {{ document.section_label }}
+    </span>
+    {% set status = document.metadata.get('status','') %}
+    {% if status %}
+    <span class="pill {% if status == 'definitief' %}success{% elif status == 'concept' %}warning{% else %}subtle{% endif %}" style="font-size:.78rem">
+      {{ status }}
+    </span>
+    {% endif %}
+    {% for tag in clean_tags %}
+    <span class="pill subtle" style="font-size:.75rem">{{ tag }}</span>
+    {% endfor %}
+    <span style="margin-left:auto;font-size:.82rem;color:var(--muted)">{{ document.metadata.get('datum','') }}</span>
+  </div>
+
+  {# Titel #}
+  <h2 style="margin:0 0 6px;font-size:1.4rem;letter-spacing:-.02em">{{ document.title }}</h2>
+  {% if document.metadata.get('samenvatting') %}
+  <p style="margin:0 0 24px;color:var(--muted);font-size:.95rem;max-width:720px">{{ document.metadata.get('samenvatting') }}</p>
+  {% endif %}
+
+  <div style="display:grid;gap:16px">
+
+    {# Kaart: Onderwerp / Context #}
+    {% set onderwerp = sections.get('onderwerp') or sections.get('vraagstelling') or sections.get('context') %}
+    {% if onderwerp %}
+    <div class="card" style="padding:20px 24px">
+      <div class="eyebrow" style="margin-bottom:8px">
+        {% if document.section_key == 'vragen' %}Vraagstelling{% else %}Onderwerp{% endif %}
+      </div>
+      <div style="font-size:.95rem;line-height:1.65;color:var(--ink)">
+        {{ onderwerp | replace('\n', '<br>') | safe }}
+      </div>
+      {% if document.metadata.get('afzender_type') or document.metadata.get('locatie') %}
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:20px;flex-wrap:wrap">
+        {% if document.metadata.get('afzender_type') %}
+        <span style="font-size:.82rem;color:var(--muted)">Type: <strong>{{ document.metadata.get('afzender_type') }}</strong></span>
+        {% endif %}
+        {% if document.metadata.get('locatie') %}
+        <span style="font-size:.82rem;color:var(--muted)">Locatie: <strong>{{ document.metadata.get('locatie') }}</strong></span>
+        {% endif %}
+        {% if document.metadata.get('doelgroep') %}
+        <span style="font-size:.82rem;color:var(--muted)">Doelgroep: <strong>{{ document.metadata.get('doelgroep') }}</strong></span>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
     {% endif %}
 
-    <dl class="meta-list">
-      {% for key, value in document.metadata.items() %}
-      {% if key != 'samenvatting' %}
-      <div><dt>{{ key }}</dt><dd>{{ value }}</dd></div>
+    {# Kaart: Antwoord #}
+    {% set antwoord_tekst = sections.get('conceptantwoord') or sections.get('antwoord') or sections.get('definitief antwoord') %}
+    {% if antwoord_tekst %}
+    <div class="card" style="padding:20px 24px;border-left:4px solid var(--brand)">
+      <div class="eyebrow" style="margin-bottom:10px">
+        {% if sections.get('conceptantwoord') %}Concept antwoord{% else %}Antwoord{% endif %}
+      </div>
+      <div style="font-size:.95rem;line-height:1.7;color:var(--ink)">
+        {{ antwoord_tekst | replace('\n', '<br>') | safe }}
+      </div>
+    </div>
+    {% endif %}
+
+    {# Kaart: Wettelijk kader / Onderbouwing #}
+    {% set onderbouwing = sections.get('onderbouwing') or sections.get('wettelijk kader') or sections.get('beoordeling') %}
+    {% if onderbouwing %}
+    <div class="card" style="padding:20px 24px;background:var(--surface-soft)">
+      <div class="eyebrow" style="margin-bottom:10px">Getoetst wettelijk kader</div>
+      <div style="font-size:.9rem;line-height:1.65;color:var(--ink-soft)">
+        {{ onderbouwing | replace('\n', '<br>') | safe }}
+      </div>
+    </div>
+    {% endif %}
+
+    {# Kaart: Follow-up (indien aanwezig) #}
+    {% set followup = sections.get('follow-up') or sections.get('followup') or sections.get('vervolgactie') %}
+    {% if followup %}
+    <div class="card" style="padding:16px 24px;border-left:3px solid var(--brand-dark)">
+      <div class="eyebrow" style="margin-bottom:8px;color:var(--muted)">Follow-up</div>
+      <div style="font-size:.88rem;line-height:1.6;color:var(--ink-soft)">
+        {{ followup | replace('\n', '<br>') | safe }}
+      </div>
+    </div>
+    {% endif %}
+
+    {# Gerelateerde bestanden #}
+    {% set heeft_links = document.metadata.get('vraagbestand') or document.metadata.get('beoordelingsbestand') or document.metadata.get('antwoord') or document.metadata.get('beoordeling') %}
+    {% if heeft_links %}
+    <div class="card" style="padding:16px 24px">
+      <div class="eyebrow" style="margin-bottom:10px">Gerelateerde documenten</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        {% for key in ['vraagbestand','beoordelingsbestand','antwoord','beoordeling'] %}
+        {% if document.metadata.get(key) %}
+        <a href="/document/{{ document.metadata.get(key) }}" class="button-link subtle" style="font-size:.82rem;padding:7px 12px;min-width:auto">
+          {{ key | replace('bestand','') | replace('_',' ') | title }} →
+        </a>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>{# /grid #}
+
+{# ══════════════════════════════════════════
+   WETGEVING & OVERIGE — artikel layout
+   ══════════════════════════════════════════ #}
+{% else %}
+
+  <div style="display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start">
+
+    {# Sidebar metadata #}
+    <aside class="card" style="padding:20px;position:sticky;top:20px">
+      <div class="eyebrow" style="margin-bottom:6px">{{ document.section_label }}</div>
+      <h3 style="margin:0 0 16px;font-size:1rem;line-height:1.4">{{ document.title }}</h3>
+
+      {% if document.metadata.get('samenvatting') %}
+      <p style="font-size:.83rem;color:var(--muted);margin:0 0 16px;line-height:1.5">
+        {{ document.metadata.get('samenvatting')[:220] }}{% if document.metadata.get('samenvatting')|length > 220 %}…{% endif %}
+      </p>
       {% endif %}
-      {% endfor %}
-    </dl>
 
-    <div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee">
-      <a href="{{ url_for('wetgeving') }}" style="font-size:.85rem;color:#666">← Terug naar wetgeving</a>
-    </div>
-  </aside>
+      <dl style="margin:0;display:grid;gap:8px">
+        {% for key in ['datum','jurisdictie','status','onderwerp','bron'] %}
+        {% if document.metadata.get(key) %}
+        <div style="border-top:1px solid var(--line);padding-top:8px">
+          <dt style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px">{{ key }}</dt>
+          <dd style="margin:0;font-size:.85rem;word-break:break-word">{{ document.metadata.get(key) }}</dd>
+        </div>
+        {% endif %}
+        {% endfor %}
+        {% if clean_tags %}
+        <div style="border-top:1px solid var(--line);padding-top:8px">
+          <dt style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Tags</dt>
+          <dd style="margin:0;display:flex;flex-wrap:wrap;gap:5px">
+            {% for tag in clean_tags %}
+            <span class="pill subtle" style="font-size:.73rem;padding:3px 8px">{{ tag }}</span>
+            {% endfor %}
+          </dd>
+        </div>
+        {% endif %}
+      </dl>
+    </aside>
 
-  <article class="card article-body">
-    {# Zoekbalk binnen document #}
-    <div class="doc-search-bar" style="display:flex;gap:8px;align-items:center;margin-bottom:20px;padding:10px 14px;background:#f7f7f8;border-radius:8px;border:1px solid #e0e0e0">
-      <input type="text" id="doc-search-input" placeholder="Zoek in dit document…" value="{{ query }}"
-             style="flex:1;padding:6px 10px;border:1px solid #ccc;border-radius:6px;font-size:.9rem">
-      <button onclick="docSearchNext()" style="padding:6px 12px;background:#c0392b;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.85rem">▼ Volgende</button>
-      <button onclick="docSearchPrev()" style="padding:6px 12px;background:#555;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.85rem">▲ Vorige</button>
-      <span id="doc-search-count" style="font-size:.82rem;color:#888;white-space:nowrap"></span>
-    </div>
+    {# Artikel body #}
+    <article class="card article-body" style="padding:28px 32px">
+      {{ rendered_body | safe }}
+    </article>
 
-    <div id="doc-body">
-      {{ rendered_body|safe }}
-    </div>
-  </article>
-</section>
+  </div>
+
+{% endif %}
+</div>{# /doc-body #}
 
 <style>
-  .doc-highlight { background: #fff176; border-radius: 2px; padding: 0 1px; }
-  .doc-highlight.active { background: #ff9800; color: #fff; border-radius: 2px; }
-  .detail-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start; }
-  @media (max-width: 768px) { .detail-layout { grid-template-columns: 1fr; } }
-  .sidebar { position: sticky; top: 20px; }
-  .meta-list { margin: 0; }
-  .meta-list div { display: flex; flex-direction: column; margin-bottom: 8px; }
-  .meta-list dt { font-size: .75rem; font-weight: 600; color: #888; text-transform: uppercase; }
-  .meta-list dd { margin: 0; font-size: .88rem; word-break: break-word; }
-  .article-body h1, .article-body h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 6px; margin-top: 24px; }
-  .article-body h3 { margin-top: 18px; color: #333; }
-  .article-body table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-  .article-body th { background: #f5f5f5; text-align: left; padding: 8px 10px; font-size: .88rem; }
-  .article-body td { padding: 7px 10px; border-bottom: 1px solid #eee; font-size: .88rem; vertical-align: top; }
-  .article-body code { background: #f5f5f5; padding: 1px 5px; border-radius: 3px; font-size: .87em; }
-  .article-body blockquote { border-left: 3px solid #c0392b; margin: 12px 0; padding: 8px 16px; background: #fafafa; color: #555; }
+  .doc-highlight        { background:#fff176; border-radius:2px; padding:0 1px }
+  .doc-highlight.active { background:#ff9800; color:#fff }
+  .article-body h1 { font-size:1.5rem; font-weight:700; margin:0 0 20px; border-bottom:2px solid var(--line); padding-bottom:10px }
+  .article-body h2 { font-size:1.05rem; font-weight:700; color:var(--ink); margin:24px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--line) }
+  .article-body h3 { font-size:.95rem; font-weight:600; color:var(--ink-soft); margin:16px 0 6px }
+  .article-body p  { margin:0 0 12px; font-size:.92rem; line-height:1.65 }
+  .article-body li { font-size:.92rem; line-height:1.65; margin-bottom:4px }
+  .article-body table th { font-size:.78rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:var(--surface-soft) }
+  .article-body table td { font-size:.88rem }
+  .article-body code { background:var(--surface-mid); border-radius:4px; padding:2px 6px; font-size:.84em }
+  .article-body blockquote { border-left:3px solid var(--brand); margin:12px 0; padding:10px 18px; background:var(--surface-soft); border-radius:0 8px 8px 0 }
 </style>
 
 <script>
-(function() {
-  let matches = [];
-  let currentMatch = -1;
-  const input = document.getElementById('doc-search-input');
-  const countEl = document.getElementById('doc-search-count');
-  const body = document.getElementById('doc-body');
-
-  // Store original HTML
-  const originalHTML = body.innerHTML;
-
-  function escapeRegex(s) {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
-  function highlight(term) {
-    // Restore original first
-    body.innerHTML = originalHTML;
-    matches = [];
-    currentMatch = -1;
-
-    if (!term || term.length < 2) {
-      countEl.textContent = '';
-      return;
-    }
-
-    const regex = new RegExp('(' + escapeRegex(term) + ')', 'gi');
-
-    // Walk text nodes only
-    function walkNodes(node) {
-      if (node.nodeType === 3) { // text node
-        const parts = node.textContent.split(regex);
-        if (parts.length > 1) {
-          const frag = document.createDocumentFragment();
-          parts.forEach(function(part) {
-            if (regex.test(part)) {
-              const mark = document.createElement('mark');
-              mark.className = 'doc-highlight';
-              mark.textContent = part;
-              frag.appendChild(mark);
-            } else {
-              frag.appendChild(document.createTextNode(part));
-            }
-            regex.lastIndex = 0;
-          });
-          node.parentNode.replaceChild(frag, node);
-        }
-      } else if (node.nodeType === 1 && !['SCRIPT','STYLE','MARK'].includes(node.tagName)) {
-        Array.from(node.childNodes).forEach(walkNodes);
-      }
-    }
-    walkNodes(body);
-
-    matches = Array.from(body.querySelectorAll('mark.doc-highlight'));
-    countEl.textContent = matches.length > 0 ? matches.length + ' resultaten' : 'Niet gevonden';
-
-    if (matches.length > 0) {
-      currentMatch = 0;
-      activateMatch(0);
-    }
-  }
-
-  function activateMatch(i) {
-    matches.forEach(function(m) { m.classList.remove('active'); });
-    if (matches[i]) {
-      matches[i].classList.add('active');
-      matches[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
-      countEl.textContent = (i + 1) + ' / ' + matches.length;
-    }
-  }
-
-  window.docSearchNext = function() {
-    if (!matches.length) return;
-    currentMatch = (currentMatch + 1) % matches.length;
-    activateMatch(currentMatch);
-  };
-
-  window.docSearchPrev = function() {
-    if (!matches.length) return;
-    currentMatch = (currentMatch - 1 + matches.length) % matches.length;
-    activateMatch(currentMatch);
-  };
-
-  // Live search while typing
-  let debounce;
-  input.addEventListener('input', function() {
-    clearTimeout(debounce);
-    debounce = setTimeout(function() { highlight(input.value.trim()); }, 250);
-  });
-
-  // Enter key = next match
-  input.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.shiftKey ? docSearchPrev() : docSearchNext(); }
-  });
-
-  // Auto-highlight if query param present
-  const q = "{{ query|e }}";
-  if (q && q.length >= 2) {
-    highlight(q);
-  }
+(function(){
+  let matches=[], cur=-1;
+  const input=document.getElementById('doc-search-input');
+  const countEl=document.getElementById('doc-search-count');
+  const body=document.getElementById('doc-body');
+  const orig=body.innerHTML;
+  function esc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+  function highlight(term){
+    body.innerHTML=orig; matches=[]; cur=-1;
+    if(!term||term.length<2){countEl.textContent='';return}
+    const rx=new RegExp('('+esc(term)+')','gi');
+    function walk(n){
+      if(n.nodeType===3){
+        const parts=n.textContent.split(rx);
+        if(parts.length>1){
+          const f=document.createDocumentFragment();
+          parts.forEach(p=>{if(rx.test(p)){const m=document.createElement('mark');m.className='doc-highlight';m.textContent=p;f.appendChild(m)}else f.appendChild(document.createTextNode(p));rx.lastIndex=0});
+          n.parentNode.replaceChild(f,n)}}
+      else if(n.nodeType===1&&!['SCRIPT','STYLE','MARK'].includes(n.tagName))Array.from(n.childNodes).forEach(walk)}
+    walk(body);
+    matches=Array.from(body.querySelectorAll('mark.doc-highlight'));
+    countEl.textContent=matches.length?matches.length+' resultaten':'Niet gevonden';
+    if(matches.length){cur=0;activate(0)}}
+  function activate(i){
+    matches.forEach(m=>m.classList.remove('active'));
+    if(matches[i]){matches[i].classList.add('active');matches[i].scrollIntoView({behavior:'smooth',block:'center'});countEl.textContent=(i+1)+' / '+matches.length}}
+  window.docSearchNext=()=>{if(!matches.length)return;cur=(cur+1)%matches.length;activate(cur)};
+  window.docSearchPrev=()=>{if(!matches.length)return;cur=(cur-1+matches.length)%matches.length;activate(cur)};
+  let t;input.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(()=>highlight(input.value.trim()),250)});
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.shiftKey?docSearchPrev():docSearchNext()}});
+  const q="{{query|e}}";if(q&&q.length>=2)highlight(q);
 })();
 </script>
 {% endblock %}
