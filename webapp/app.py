@@ -880,12 +880,39 @@ def create_app() -> Flask:
             onderbouwing = request.form.get("onderbouwing", "").strip()
             geldt_voor = request.form.getlist("geldt_voor")
             status = request.form.get("status", "concept").strip()
+            actie = request.form.get("actie", "opslaan").strip()
+            documents = load_documents(kb_root)
+            clusters = cluster_vragen(documents)
 
             if not titel or not antwoord_tekst:
                 return render_template("vragen_uniform_antwoord.html",
                     error="Titel en antwoord zijn verplicht.",
                     form_values=request.form,
-                    clusters=cluster_vragen(load_documents(kb_root)))
+                    clusters=clusters,
+                    geselecteerde_vragen=[d for d in documents
+                        if d.section_key == "vragen" and tag in d.tags],
+                    selected_tag=tag,
+                    ai_review=None)
+
+            # ── AI-toetsing ──────────────────────────────────────────────
+            if actie == "toets":
+                geselecteerde_vragen = [d for d in documents
+                    if d.section_key == "vragen" and (
+                        d.rel_path in geldt_voor if geldt_voor else tag in d.tags)]
+                vragen_context = "\n".join(
+                    f"- {d.title}: {d.metadata.get('samenvatting','')[:120]}"
+                    for d in geselecteerde_vragen[:10]
+                )
+                ai_review = review_uniform_antwoord(antwoord_tekst, onderbouwing, vragen_context, tag)
+                return render_template(
+                    "vragen_uniform_antwoord.html",
+                    clusters=clusters,
+                    geselecteerde_vragen=geselecteerde_vragen,
+                    selected_tag=tag,
+                    form_values=request.form,
+                    ai_review=ai_review,
+                    error=None,
+                )
 
             slug = slugify(titel)
             import datetime as _dt
@@ -1386,6 +1413,71 @@ def blob_write(kb_root: Path, file_path: Path, content: str) -> None:
     if blob_store.available():
         rel = str(file_path.relative_to(kb_root)).replace("\\", "/")
         blob_store.upload(rel, content)
+
+
+def review_uniform_antwoord(
+    antwoord: str,
+    onderbouwing: str,
+    vragen_context: str,
+    tag: str,
+) -> dict:
+    """
+    Laat het concept-uniforme antwoord toetsen door Claude.
+    Geeft dict terug met keys: oordeel, punten (list), verbeterd_antwoord, fout (str|None).
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if not api_key:
+        return {"fout": "Geen ANTHROPIC_API_KEY geconfigureerd. Voeg deze toe als omgevingsvariabele in Vercel."}
+
+    prompt = f"""Je bent een compliance-expert bij Mobacc, een bedrijf dat bedrijven adviseert over chemische wetgeving (REACH, CLP, ADR, BRZO, etc.).
+
+Toets het onderstaande concept-uniforme antwoord op het thema **{tag}**.
+
+**Vragen in dit cluster:**
+{vragen_context or "(geen vragen geselecteerd)"}
+
+**Concept antwoord:**
+{antwoord}
+
+**Onderbouwing / wetgeving:**
+{onderbouwing or "(niet ingevuld)"}
+
+Geef je beoordeling in dit exacte JSON-formaat (geen extra tekst erbuiten):
+{{
+  "oordeel": "goed" | "matig" | "onvoldoende",
+  "samenvatting": "één zin over de algehele kwaliteit",
+  "punten": [
+    {{"type": "positief" | "aandacht" | "ontbreekt", "tekst": "..."}},
+    ...
+  ],
+  "verbeterd_antwoord": "verbeterde versie van het antwoord, of leeg als het al goed is"
+}}"""
+
+    try:
+        resp = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-haiku-4-5",
+                "max_tokens": 1500,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        raw = resp.json()["content"][0]["text"].strip()
+        # Strip eventuele markdown code fences
+        if raw.startswith("```"):
+            raw = re.sub(r"^```[a-z]*\n?", "", raw)
+            raw = re.sub(r"\n?```$", "", raw)
+        import json as _json
+        return _json.loads(raw)
+    except Exception as exc:
+        return {"fout": f"AI-toetsing mislukt: {str(exc)[:120]}"}
 
 
 def safe_build_indexes(kb_root: Path) -> None:

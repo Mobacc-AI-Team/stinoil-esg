@@ -105,10 +105,59 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="button-primary">Uniform antwoord opslaan</button>
+        <button type="submit" name="actie" value="toets" class="btn-toets">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:middle;margin-right:5px"><circle cx="10" cy="10" r="8"/><path d="M10 6v4l2.5 2.5"/></svg>
+          Laat toetsen door AI
+        </button>
+        <button type="submit" name="actie" value="opslaan" class="button-primary">Opslaan</button>
         <a href="{{ url_for('vragen_analyse') }}" class="button-link secondary">Annuleren</a>
       </div>
     </form>
+
+    {# ── AI-review panel ── #}
+    {% if ai_review %}
+    <div class="ai-review-panel card" style="margin-top:24px">
+      {% if ai_review.get('fout') %}
+        <div class="eyebrow" style="color:var(--brand)">AI-toetsing</div>
+        <p style="color:var(--muted)">{{ ai_review.fout }}</p>
+      {% else %}
+        {% set oordeel = ai_review.get('oordeel','') %}
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div class="eyebrow">AI-beoordeling</div>
+          <span class="pill {% if oordeel == 'goed' %}success{% elif oordeel == 'matig' %}warning{% else %}error{% endif %}" style="font-size:.8rem;text-transform:capitalize">
+            {{ oordeel }}
+          </span>
+        </div>
+        {% if ai_review.get('samenvatting') %}
+        <p style="margin:0 0 16px;font-size:.95rem;font-style:italic;color:var(--ink-soft)">{{ ai_review.samenvatting }}</p>
+        {% endif %}
+
+        {% if ai_review.get('punten') %}
+        <ul style="list-style:none;padding:0;margin:0 0 18px;display:grid;gap:8px">
+          {% for punt in ai_review.punten %}
+          <li style="display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:8px;
+            background:{% if punt.type == 'positief' %}#f0faf4{% elif punt.type == 'aandacht' %}#fffbf0{% else %}#fff5f5{% endif %};
+            border-left:3px solid {% if punt.type == 'positief' %}#2d9e5f{% elif punt.type == 'aandacht' %}#d97706{% else %}var(--brand){% endif %}">
+            <span style="font-size:1rem;flex-shrink:0">{% if punt.type == 'positief' %}✓{% elif punt.type == 'aandacht' %}⚠{% else %}✗{% endif %}</span>
+            <span style="font-size:.9rem;line-height:1.5">{{ punt.tekst }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if ai_review.get('verbeterd_antwoord') %}
+        <div style="background:var(--surface-soft);border:1px solid var(--line);border-radius:10px;padding:16px 20px">
+          <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px">Verbeterd antwoord (klik om over te nemen)</div>
+          <pre id="verbeterd-tekst" style="white-space:pre-wrap;font-family:inherit;font-size:.9rem;margin:0;line-height:1.6;cursor:pointer" title="Klik om over te nemen in het formulier">{{ ai_review.verbeterd_antwoord }}</pre>
+          <button type="button" onclick="overnemen()" style="margin-top:10px;font-size:.82rem;padding:6px 14px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer">
+            ↑ Gebruik dit antwoord
+          </button>
+        </div>
+        {% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+
   </main>
 </div>
 
@@ -119,5 +168,34 @@ document.getElementById('select-all-btn')?.addEventListener('click', function() 
   checkboxes.forEach(function(cb) { cb.checked = !allChecked; });
   this.textContent = allChecked ? 'Selecteer alle vragen' : 'Deselecteer alle vragen';
 });
+function overnemen() {
+  var tekst = document.getElementById('verbeterd-tekst').textContent;
+  var ta = document.getElementById('antwoord');
+  if (ta) { ta.value = tekst; ta.scrollIntoView({behavior:'smooth', block:'center'}); }
+}
+// Toon spinner tijdens toetsen
+document.querySelector('button[value="toets"]')?.closest('form')?.addEventListener('submit', function(e) {
+  var btn = this.querySelector('button[value="toets"]');
+  if (document.activeElement === btn) {
+    btn.textContent = '⏳ Toetsen…';
+    btn.disabled = true;
+  }
+});
 </script>
+
+<style>
+.btn-toets {
+  background: var(--surface-mid);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s;
+}
+.btn-toets:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+.ai-review-panel { border-top: 3px solid var(--brand); }
+</style>
 {% endblock %}
