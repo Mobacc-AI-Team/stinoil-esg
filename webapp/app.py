@@ -702,15 +702,26 @@ def create_app() -> Flask:
             location=request.args.get("location", "").strip(),
             status=request.args.get("status", "").strip(),
         )
-        docs = filter_case_documents(load_documents(kb_root), filters)
+        all_docs = load_documents(kb_root)
+        docs = filter_case_documents(all_docs, filters)
+
+        # Bereken per vraag welke uniforme antwoorden van toepassing zijn
+        ua_matches: dict[str, list] = {}
+        for doc in docs:
+            if doc.section_key == "vragen":
+                matches = find_matching_uniform_answers(all_docs, doc.tags, doc.title)
+                if matches:
+                    ua_matches[doc.rel_path] = matches
+
         return render_template(
             "casussen.html",
             filters=filters,
             documents=docs,
-            available_tags=sorted(unique_values(load_documents(kb_root), "tags")),
-            available_categories=sorted(unique_values(load_documents(kb_root), "categorieen")),
-            available_locations=sorted(unique_values(load_documents(kb_root), "locatie")),
-            available_statuses=sorted(unique_values(load_documents(kb_root), "status")),
+            ua_matches=ua_matches,
+            available_tags=sorted(unique_values(all_docs, "tags")),
+            available_categories=sorted(unique_values(all_docs, "categorieen")),
+            available_locations=sorted(unique_values(all_docs, "locatie")),
+            available_statuses=sorted(unique_values(all_docs, "status")),
             create_status=request.args.get("status", "").strip(),
         )
 
@@ -844,6 +855,14 @@ def create_app() -> Flask:
         else:
             clean_tags = list(raw_tags)
 
+        # Zoek passende uniforme antwoorden voor vragen
+        ua_suggesties = []
+        if record.section_key == "vragen":
+            all_docs = load_documents(kb_root)
+            ua_suggesties = find_matching_uniform_answers(
+                all_docs, clean_tags, record.title + " " + record.body[:500]
+            )
+
         return render_template(
             "document_detail.html",
             document=record,
@@ -851,6 +870,7 @@ def create_app() -> Flask:
             sections=sections,
             clean_tags=clean_tags,
             query=query,
+            ua_suggesties=ua_suggesties,
         )
 
     @app.route("/vragen/analyse")
@@ -1424,6 +1444,37 @@ def blob_write(kb_root: Path, file_path: Path, content: str) -> None:
     if blob_store.available():
         rel = str(file_path.relative_to(kb_root)).replace("\\", "/")
         blob_store.upload(rel, content)
+
+
+def find_matching_uniform_answers(
+    documents: Iterable,
+    question_tags: list[str],
+    question_text: str = "",
+    max_results: int = 3,
+) -> list:
+    """
+    Zoekt uniforme antwoorden die aansluiten bij een vraag.
+    Sorteert op: aantal overeenkomende tags (desc), daarna recentheid.
+    Geeft lijst van (DocumentRecord, score, overlapping_tags) terug.
+    """
+    q_tags = {t.lower().strip() for t in question_tags if t.strip()}
+    q_words = set(re.findall(r"\w{4,}", question_text.lower())) if question_text else set()
+
+    results = []
+    for doc in documents:
+        if doc.section_key != "uniforme_antwoorden":
+            continue
+        ua_tags = {t.lower().strip() for t in doc.tags if t.strip()}
+        overlap_tags = q_tags & ua_tags
+        # Bonus score als kernwoorden uit de vraag voorkomen in de UA titel
+        title_words = set(re.findall(r"\w{4,}", doc.title.lower()))
+        word_overlap = len(q_words & title_words)
+        score = len(overlap_tags) * 10 + word_overlap
+        if score > 0:
+            results.append((doc, score, sorted(overlap_tags)))
+
+    results.sort(key=lambda x: -x[1])
+    return results[:max_results]
 
 
 def review_uniform_antwoord(

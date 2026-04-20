@@ -59,6 +59,22 @@
       <div class="case-meta">{{ doc.section_label }} · {{ doc.metadata.get('datum', '—') }}</div>
       <h3><a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a></h3>
       <p>{{ doc.metadata.get('samenvatting', 'Geen samenvatting beschikbaar.') }}</p>
+
+      {# Uniforme antwoord suggesties #}
+      {% if ua_matches and doc.rel_path in ua_matches %}
+      <div style="margin:8px 0 4px;padding:8px 12px;background:#f0faf4;border-left:3px solid #2d9e5f;border-radius:0 6px 6px 0">
+        <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#2d9e5f">Passend uniform antwoord</span>
+        <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:6px">
+          {% for ua, score, overlap in ua_matches[doc.rel_path] %}
+          <a href="{{ url_for('document_detail', rel_path=ua.rel_path) }}"
+             style="font-size:.82rem;font-weight:600;color:#1a6e40;text-decoration:underline dotted">
+            {{ ua.title }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       <div class="pill-row">
         {% if doc.metadata.get('locatie') %}<span class="pill">{{ doc.metadata.get('locatie') }}</span>{% endif %}
         {% if doc.metadata.get('status') %}<span class="pill">{{ doc.metadata.get('status') }}</span>{% endif %}

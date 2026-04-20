@@ -44,6 +44,39 @@
 
   <div style="display:grid;gap:16px">
 
+    {# Kaart: Passend uniform antwoord (alleen voor vragen) #}
+    {% if ua_suggesties %}
+    <div style="padding:16px 20px;background:#f0faf4;border:1px solid #b7e4c7;border-left:4px solid #2d9e5f;border-radius:var(--radius-sm)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:1.1rem">🔗</span>
+        <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1a6e40">
+          Mogelijk passend uniform antwoord
+        </span>
+      </div>
+      <p style="margin:0 0 10px;font-size:.85rem;color:#2d5a3d;line-height:1.5">
+        Op basis van de tags van deze vraag zijn er uniforme antwoorden die mogelijk van toepassing zijn:
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        {% for ua, score, overlap in ua_suggesties %}
+        <a href="{{ url_for('document_detail', rel_path=ua.rel_path) }}"
+           style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#fff;border:1px solid #b7e4c7;border-radius:8px;text-decoration:none;color:var(--ink)">
+          <div>
+            <strong style="font-size:.92rem">{{ ua.title }}</strong>
+            {% if overlap %}
+            <div style="margin-top:3px;display:flex;gap:5px;flex-wrap:wrap">
+              {% for tag in overlap %}
+              <span style="font-size:.72rem;background:#d1f5e0;color:#1a6e40;padding:2px 7px;border-radius:20px;font-weight:600">{{ tag }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          <span style="color:#2d9e5f;font-size:.85rem;font-weight:600;white-space:nowrap;margin-left:12px">Bekijk →</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
     {# Kaart: Onderwerp / Context #}
     {% set onderwerp = sections.get('onderwerp') or sections.get('vraagstelling') or sections.get('context') %}
     {% if onderwerp %}
