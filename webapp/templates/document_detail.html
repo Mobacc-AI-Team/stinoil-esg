@@ -233,7 +233,7 @@
             Eigenaar
             <select name="eigenaar" style="padding:5px 8px;border:1px solid var(--line);border-radius:5px;font-size:.82rem">
               <option value="">— ongewijzigd —</option>
-              {% for afd in ['HSE','QA','Finance','ICT','R&D','HR'] %}
+              {% for afd in ['HSE','QA','Finance','ICT','R&D','HR','Technical Engineering'] %}
               <option value="{{ afd }}" {% if document.metadata.get('eigenaar') == afd %}selected{% endif %}>{{ afd }}</option>
               {% endfor %}
             </select>
