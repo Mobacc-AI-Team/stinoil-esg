@@ -173,13 +173,14 @@ function overnemen() {
   var ta = document.getElementById('antwoord');
   if (ta) { ta.value = tekst; ta.scrollIntoView({behavior:'smooth', block:'center'}); }
 }
-// Toon spinner tijdens toetsen
-document.querySelector('button[value="toets"]')?.closest('form')?.addEventListener('submit', function(e) {
-  var btn = this.querySelector('button[value="toets"]');
-  if (document.activeElement === btn) {
+// Toon spinner tijdens toetsen — GEEN disabled, anders wordt de waarde niet meegestuurd
+document.querySelector('button[value="toets"]')?.addEventListener('click', function() {
+  var btn = this;
+  setTimeout(function() {
     btn.textContent = '⏳ Toetsen…';
-    btn.disabled = true;
-  }
+    btn.style.opacity = '0.7';
+    btn.style.pointerEvents = 'none';
+  }, 0);
 });
 </script>
 

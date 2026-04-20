@@ -811,7 +811,13 @@ def create_app() -> Flask:
         require_login(app.config["DATABASE_URL"])
         safe_rel = Path(rel_path)
         target = (kb_root / safe_rel).resolve()
-        if kb_root not in [target, *target.parents] or not target.is_file():
+        if kb_root not in [target, *target.parents]:
+            abort(404)
+        # Bestand niet lokaal? Probeer eerst vanuit Blob te halen.
+        if not target.is_file() and blob_store.available():
+            blob_store.sync_to_dir(kb_root)
+            load_documents.cache_clear()
+        if not target.is_file():
             abort(404)
         record = document_from_file(kb_root, target)
         query = request.args.get("q", "").strip()
