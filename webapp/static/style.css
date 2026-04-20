@@ -44,7 +44,7 @@ a:hover { color: var(--brand-hover); text-decoration: underline; }
 
 /* ── Header ── */
 .site-header {
-  background: linear-gradient(135deg, #384d55 0%, #8ea8b2 100%);
+  background: linear-gradient(135deg, #1e2729 0%, #4a6068 100%);
   color: #fff;
   border-bottom: 4px solid var(--brand);
 }
@@ -206,6 +206,9 @@ h3 { margin: 0 0 8px; font-size: 1.05rem; font-weight: 600; }
 .stat         { display: flex; flex-direction: column; justify-content: space-between; padding: 20px 24px; }
 .stat span    { display: block; color: var(--muted); font-size: .82rem; margin-bottom: 8px; }
 .stat strong  { font-size: 2rem; font-weight: 700; line-height: 1; }
+
+/* ── Hero ── */
+.hero { margin-bottom: 20px; }
 
 /* ── Action cards (dashboard) ── */
 .action-cards {
