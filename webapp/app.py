@@ -19,6 +19,7 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from chatgpt_export_to_kb import format_yaml_list, slugify, yaml_escape
+import blob_store
 
 try:
     from docx import Document as DocxDocument
@@ -480,7 +481,7 @@ def create_app() -> Flask:
             fm_lines.append("")
 
             new_content = "\n".join(fm_lines) + "\n" + text[:8000]
-            target.write_text(new_content, encoding="utf-8")
+            blob_write(kb_root, target, new_content)
             load_documents.cache_clear()
             safe_build_indexes(kb_root)
             return redirect(url_for("wetgeving_importeer", status="ververst"))
@@ -788,10 +789,35 @@ def create_app() -> Flask:
             abort(404)
         record = document_from_file(kb_root, target)
         query = request.args.get("q", "").strip()
+
+        # Parse body into named sections (## Heading → content)
+        sections: dict[str, str] = {}
+        current_key = "_intro"
+        current_lines: list[str] = []
+        for line in record.body.splitlines():
+            if line.startswith("## "):
+                sections[current_key] = "\n".join(current_lines).strip()
+                current_key = line[3:].strip().lower()
+                current_lines = []
+            elif line.startswith("# "):
+                pass  # skip top-level h1
+            else:
+                current_lines.append(line)
+        sections[current_key] = "\n".join(current_lines).strip()
+
+        # Clean tags for display (remove brackets)
+        raw_tags = record.metadata.get("tags", "")
+        if isinstance(raw_tags, str):
+            clean_tags = [t.strip().strip("[]'\"") for t in raw_tags.strip("[]").split(",") if t.strip().strip("[]'\"")]
+        else:
+            clean_tags = list(raw_tags)
+
         return render_template(
             "document_detail.html",
             document=record,
             rendered_body=markdown_to_html(record.body),
+            sections=sections,
+            clean_tags=clean_tags,
             query=query,
         )
 
@@ -872,7 +898,7 @@ status: {status}
 
 {chr(10).join(f"- {v}" for v in geldt_voor) if geldt_voor else "- Alle vragen met tag: " + tag}
 """
-            filepath.write_text(content, encoding="utf-8")
+            blob_write(kb_root, filepath, content)
             load_documents.cache_clear()
             safe_build_indexes(kb_root)
             return redirect(url_for("vragen_analyse"))
@@ -927,6 +953,9 @@ def resolve_kb_root() -> Path:
     runtime_root = RUNTIME_KB_ROOT
     ensure_writable_directory(runtime_root)
     bootstrap_runtime_kb(default_root, runtime_root)
+    # Laad gebruikers-opgeslagen bestanden vanuit Vercel Blob (indien geconfigureerd)
+    if blob_store.available():
+        blob_store.sync_to_dir(runtime_root)
     return runtime_root
 
 
@@ -1162,21 +1191,19 @@ def create_regulation_record_from_upload(
 
     summary = summarize_extracted_text(extracted_text, subject or safe_title)
     source_rel = str(source_path.relative_to(kb_root)).replace("\\", "/")
-    regulation_path.write_text(
-        render_uploaded_regulation_markdown(
-            title=safe_title,
-            jurisdiction=normalized_jurisdiction,
-            subject=subject or infer_subject(extracted_text),
-            source_label=source_label or upload_name,
-            source_rel=source_rel,
-            summary=summary,
-            tags=tag_list,
-            categories=category_list,
-            extracted_text=extracted_text,
-            timestamp=timestamp,
-        ),
-        encoding="utf-8",
+    md_content = render_uploaded_regulation_markdown(
+        title=safe_title,
+        jurisdiction=normalized_jurisdiction,
+        subject=subject or infer_subject(extracted_text),
+        source_label=source_label or upload_name,
+        source_rel=source_rel,
+        summary=summary,
+        tags=tag_list,
+        categories=category_list,
+        extracted_text=extracted_text,
+        timestamp=timestamp,
     )
+    blob_write(kb_root, regulation_path, md_content)
     return regulation_path
 
 
@@ -1284,56 +1311,55 @@ def create_case_from_form(
         attachment_path = save_case_attachment(kb_root, upload_name, upload_content, organisatie or preview.titel)
         attachment_rel = relative_path(kb_root, attachment_path)
 
-    vraag_path.write_text(
-        render_case_question_markdown(
-            titel=preview.titel,
-            datum=date_str,
-            afzender_type=preview.afzender_type,
-            organisatie=organisatie or "onbekend",
-            locatie=locatie or "centrale_beoordeling",
-            vraag=preview.intake_text,
-            tags=tag_list,
-            categories=category_list,
-            bron=preview.bron,
-            attachment_rel=attachment_rel,
-            beoordeling_rel=beoordeling_rel,
-            antwoord_rel=antwoord_rel,
-            summary=summary,
-        ),
-        encoding="utf-8",
-    )
+    blob_write(kb_root, vraag_path, render_case_question_markdown(
+        titel=preview.titel,
+        datum=date_str,
+        afzender_type=preview.afzender_type,
+        organisatie=organisatie or "onbekend",
+        locatie=locatie or "centrale_beoordeling",
+        vraag=preview.intake_text,
+        tags=tag_list,
+        categories=category_list,
+        bron=preview.bron,
+        attachment_rel=attachment_rel,
+        beoordeling_rel=beoordeling_rel,
+        antwoord_rel=antwoord_rel,
+        summary=summary,
+    ))
 
-    beoordeling_path.write_text(
-        render_case_assessment_markdown(
-            titel=preview.titel,
-            datum=date_str,
-            vraag_rel=vraag_rel,
-            antwoord_rel=antwoord_rel,
-            tags=tag_list,
-            categories=category_list,
-            summary=summary,
-            vraag=preview.intake_text,
-            suggested_regulations=suggested_regulations,
-        ),
-        encoding="utf-8",
-    )
+    blob_write(kb_root, beoordeling_path, render_case_assessment_markdown(
+        titel=preview.titel,
+        datum=date_str,
+        vraag_rel=vraag_rel,
+        antwoord_rel=antwoord_rel,
+        tags=tag_list,
+        categories=category_list,
+        summary=summary,
+        vraag=preview.intake_text,
+        suggested_regulations=suggested_regulations,
+    ))
 
-    antwoord_path.write_text(
-        render_case_answer_markdown(
-            titel=preview.titel,
-            datum=date_str,
-            doelgroep=preview.afzender_type,
-            vraag_rel=vraag_rel,
-            beoordeling_rel=beoordeling_rel,
-            tags=tag_list,
-            categories=category_list,
-            summary=summary,
-            suggested_regulations=suggested_regulations,
-        ),
-        encoding="utf-8",
-    )
+    blob_write(kb_root, antwoord_path, render_case_answer_markdown(
+        titel=preview.titel,
+        datum=date_str,
+        doelgroep=preview.afzender_type,
+        vraag_rel=vraag_rel,
+        beoordeling_rel=beoordeling_rel,
+        tags=tag_list,
+        categories=category_list,
+        summary=summary,
+        suggested_regulations=suggested_regulations,
+    ))
 
     return vraag_path, beoordeling_path, antwoord_path
+
+
+def blob_write(kb_root: Path, file_path: Path, content: str) -> None:
+    """Schrijf een bestand lokaal én upload het naar Vercel Blob (indien beschikbaar)."""
+    file_path.write_text(content, encoding="utf-8")
+    if blob_store.available():
+        rel = str(file_path.relative_to(kb_root)).replace("\\", "/")
+        blob_store.upload(rel, content)
 
 
 def safe_build_indexes(kb_root: Path) -> None:
