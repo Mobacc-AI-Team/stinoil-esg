@@ -671,6 +671,11 @@ def create_app() -> Flask:
                 if i >= len(WETGEVING_SUGGESTIES):
                     continue
                 item = WETGEVING_SUGGESTIES[i]
+                # Server-side duplicaatcheck — voorkomt dubbele import ongeacht frontend-status
+                if (item["naam"].lower() in existing_titles or
+                        slugify(item["naam"]) in existing_slugs):
+                    results.append({"naam": item["naam"], "status": "overgeslagen", "bericht": "Al aanwezig in kennisbank"})
+                    continue
                 try:
                     path = create_regulation_record_from_url(
                         kb_root=kb_root,
@@ -683,6 +688,8 @@ def create_app() -> Flask:
                         source_label=item["url"],
                     )
                     results.append({"naam": item["naam"], "status": "ok", "bericht": path.name})
+                    existing_titles.add(item["naam"].lower())
+                    existing_slugs.add(slugify(item["naam"]))
                 except Exception as exc:
                     results.append({"naam": item["naam"], "status": "fout", "bericht": str(exc)})
             load_documents.cache_clear()

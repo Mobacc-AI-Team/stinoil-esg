@@ -16,9 +16,11 @@
   {% if results %}
   <div class="notice-block">
     {% for r in results %}
-    <div class="notice {% if r.status == 'ok' %}success{% else %}error{% endif %}" style="margin-bottom:.4rem">
+    <div class="notice {% if r.status == 'ok' %}success{% elif r.status == 'overgeslagen' %}{% else %}error{% endif %}" style="margin-bottom:.4rem">
       {% if r.status == 'ok' %}
       <span class="pill success" style="font-size:.78rem">OK</span>
+      {% elif r.status == 'overgeslagen' %}
+      <span class="pill subtle" style="font-size:.78rem">Overgeslagen</span>
       {% else %}
       <span class="pill error" style="font-size:.78rem">FOUT</span>
       {% endif %}
