@@ -67,6 +67,7 @@ WETGEVING_REGISTER = [
     {"thema": "verpakking",   "naam": "PPWR",                          "type": "EU verordening",            "url": "https://environment.ec.europa.eu/topics/waste-and-recycling/packaging-waste_en"},
     {"thema": "duurzaamheid", "naam": "CSRD",                          "type": "EU richtlijn",              "url": "https://finance.ec.europa.eu/"},
     {"thema": "cyber",        "naam": "NIS2",                          "type": "EU richtlijn",              "url": "https://www.ncsc.nl/"},
+    {"thema": "pgs",          "naam": "PGS 6",                         "type": "Richtlijn",                 "url": "https://publicatiereeksgevaarlijkestoffen.nl/publicaties/pgs6/"},
     {"thema": "pgs",          "naam": "PGS 15",                        "type": "Richtlijn",                 "url": "https://publicatiereeksgevaarlijkestoffen.nl/pgs15"},
     {"thema": "pgs",          "naam": "PGS 19",                        "type": "Richtlijn",                 "url": "https://publicatiereeksgevaarlijkestoffen.nl/publicaties/pgs19/"},
     {"thema": "pgs",          "naam": "PGS 29",                        "type": "Richtlijn",                 "url": "https://publicatiereeksgevaarlijkestoffen.nl/publicaties/pgs29/"},
@@ -99,6 +100,21 @@ WETGEVING_SUGGESTIES = [
     {"naam": "Ozonlaagverordening (EU) 1005/2009", "thema": "chemie", "type": "eu_verordening", "url": "https://eur-lex.europa.eu/legal-content/NL/TXT/?uri=CELEX:32009R1005", "beschrijving": "Verbiedt en beperkt gebruik van ozonlaagafbrekende stoffen. Relevant voor drijfgassen in aerosolspuitbussen."},
     {"naam": "Drinkwaterwet", "thema": "nationaal", "type": "wet", "url": "https://wetten.overheid.nl/BWBR0026338", "beschrijving": "Regels voor de kwaliteit van drinkwater. Relevant bij productieprocessen waarbij drinkwater wordt gebruikt."},
     {"naam": "Wet bodembescherming (Wbb)", "thema": "nationaal", "type": "wet", "url": "https://wetten.overheid.nl/BWBR0003994", "beschrijving": "Beschermt de bodemkwaliteit bij opslag en gebruik van gevaarlijke stoffen. Relevant voor opslagtanks en chemische opslag."},
+    # Arbeid & veiligheid
+    {"naam": "Arbeidsomstandighedenwet (Arbowet)", "thema": "arbo", "type": "wet", "url": "https://wetten.overheid.nl/BWBR0010346", "beschrijving": "Basiswet voor arbeidsomstandigheden in Nederland. Verplicht werkgevers tot een veilige en gezonde werkomgeving, inclusief RI&E, preventiemedewerker en arbodienst."},
+    {"naam": "Arbeidstijdenwet", "thema": "arbo", "type": "wet", "url": "https://wetten.overheid.nl/BWBR0009052", "beschrijving": "Regelt maximale werktijden, rusttijden en nachtarbeid. Van toepassing op alle werknemers in Nederland."},
+    {"naam": "Wet arbeidsmarkt in balans (WAB)", "thema": "arbo", "type": "wet", "url": "https://www.rijksoverheid.nl/onderwerpen/arbeidsovereenkomst-en-cao/wet-arbeidsmarkt-in-balans", "beschrijving": "Regelt de balans tussen vaste en flexibele arbeidscontracten, ketenregeling en ontslagrecht. Relevant voor HR en P&O."},
+    {"naam": "Wet verbetering poortwachter", "thema": "arbo", "type": "wet", "url": "https://www.rijksoverheid.nl/onderwerpen/ziekteverzuim/wet-verbetering-poortwachter", "beschrijving": "Verplichtingen voor werkgever en werknemer bij langdurig ziekteverzuim. Regelt re-integratietraject, plan van aanpak en sancties bij niet-naleving."},
+    {"naam": "Psychosociale arbeidsbelasting (PSA) – Arbobesluit art. 2.15", "thema": "arbo", "type": "besluit", "url": "https://www.arboportaal.nl/onderwerpen/psychosociale-arbeidsbelasting", "beschrijving": "Verplichting uit het Arbobesluit om werkstress, intimidatie, agressie en ongewenst gedrag op de werkvloer te voorkomen en aan te pakken. Eigenaar: HR/HSE."},
+    # Privacy & cyber
+    {"naam": "AVG – Algemene Verordening Gegevensbescherming (GDPR)", "thema": "cyber", "type": "eu_verordening", "url": "https://eur-lex.europa.eu/legal-content/NL/TXT/?uri=CELEX:32016R0679", "beschrijving": "Europese privacywetgeving. Regelt verwerking van persoonsgegevens, rechten van betrokkenen, verwerkersovereenkomsten en meldplicht datalekken."},
+    {"naam": "Uitvoeringswet AVG (UAVG)", "thema": "nationaal", "type": "wet", "url": "https://wetten.overheid.nl/BWBR0040940", "beschrijving": "Nederlandse uitwerking van de AVG. Bevat aanvullingen en uitzonderingen voor de Nederlandse situatie, waaronder bijzondere categorieën persoonsgegevens."},
+    {"naam": "Cyberbeveiligingswet (omzetting NIS2)", "thema": "cyber", "type": "wet", "url": "https://www.ncsc.nl/onderwerpen/nis2-richtlijn", "beschrijving": "Nederlandse implementatie van de NIS2-richtlijn. Verplicht organisaties in vitale sectoren tot maatregelen voor cyberbeveiliging en meldplicht bij incidenten."},
+    # Integriteit & melden
+    {"naam": "Wet bescherming klokkenluiders", "thema": "nationaal", "type": "wet", "url": "https://wetten.overheid.nl/BWBR0046179", "beschrijving": "Verplicht organisaties met 50+ medewerkers tot een intern meldkanaal voor misstanden. Beschermt melders tegen represailles. Vervangt de eerdere Wet huis voor klokkenluiders."},
+    # Milieu & externe veiligheid
+    {"naam": "Besluit risico's zware ongevallen (Brzo 2015)", "thema": "seveso", "type": "besluit", "url": "https://wetten.overheid.nl/BWBR0037521", "beschrijving": "Nederlandse implementatie van Seveso III. Verplichtingen voor Seveso-inrichtingen: veiligheidsrapport, preventiebeleid zware ongevallen (PBZO) en intern noodplan."},
+    {"naam": "Besluit externe veiligheid inrichtingen (Bevi)", "thema": "milieu", "type": "besluit", "url": "https://wetten.overheid.nl/BWBR0016767", "beschrijving": "Stelt risiconormen voor externe veiligheid bij inrichtingen met gevaarlijke stoffen. Verplicht tot berekening plaatsgebonden risico (PR) en groepsrisico (GR)."},
 ]
 
 
