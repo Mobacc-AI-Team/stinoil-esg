@@ -985,6 +985,11 @@ def load_documents(kb_root: Path) -> tuple[DocumentRecord, ...]:
     if not kb_root.exists():
         return tuple()
 
+    # Sync gebruikers-opgeslagen bestanden vanuit Blob zodat ook andere
+    # serverless instanties nieuw opgeslagen documenten kunnen zien.
+    if blob_store.available():
+        blob_store.sync_to_dir(kb_root)
+
     records: list[DocumentRecord] = []
     for path in sorted(kb_root.glob("**/*.md")):
         records.append(document_from_file(kb_root, path))
