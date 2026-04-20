@@ -221,6 +221,47 @@
         </div>
         {% endif %}
       </dl>
+
+      {# Bewerkformulier #}
+      <details style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
+        <summary style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">
+          <span style="font-size:.9rem">✏</span> Bewerken
+        </summary>
+        <form method="post" action="{{ url_for('document_bewerken', rel_path=document.rel_path) }}"
+              style="margin-top:12px;display:grid;gap:8px">
+          <label style="display:grid;gap:3px;font-size:.75rem;font-weight:600;color:var(--muted)">
+            Eigenaar
+            <select name="eigenaar" style="padding:5px 8px;border:1px solid var(--line);border-radius:5px;font-size:.82rem">
+              <option value="">— ongewijzigd —</option>
+              {% for afd in ['HSE','QA','Finance','ICT','R&D','HR'] %}
+              <option value="{{ afd }}" {% if document.metadata.get('eigenaar') == afd %}selected{% endif %}>{{ afd }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label style="display:grid;gap:3px;font-size:.75rem;font-weight:600;color:var(--muted)">
+            Status
+            <select name="status" style="padding:5px 8px;border:1px solid var(--line);border-radius:5px;font-size:.82rem">
+              <option value="">— ongewijzigd —</option>
+              {% for s in ['actief','concept','ter_review','definitief','gearchiveerd'] %}
+              <option value="{{ s }}" {% if document.metadata.get('status') == s %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label style="display:grid;gap:3px;font-size:.75rem;font-weight:600;color:var(--muted)">
+            Onderwerp
+            <input type="text" name="onderwerp" value="{{ document.metadata.get('onderwerp','') }}"
+                   style="padding:5px 8px;border:1px solid var(--line);border-radius:5px;font-size:.82rem">
+          </label>
+          <label style="display:grid;gap:3px;font-size:.75rem;font-weight:600;color:var(--muted)">
+            Tags <span style="font-weight:400">(komma-gescheiden)</span>
+            <input type="text" name="tags" value="{{ document.metadata.get('tags','') }}"
+                   style="padding:5px 8px;border:1px solid var(--line);border-radius:5px;font-size:.82rem">
+          </label>
+          <button type="submit" style="margin-top:4px;padding:6px 12px;background:var(--brand);color:#fff;border:none;border-radius:5px;font-size:.8rem;font-weight:600;cursor:pointer">
+            Opslaan
+          </button>
+        </form>
+      </details>
     </aside>
 
     {# Artikel body #}

@@ -1150,6 +1150,35 @@ status: {status}
 
         return render_template("tijdslijn.html", tag=tag, events=events, all_tags=all_tags)
 
+    @app.route("/document/<path:rel_path>/bewerken", methods=["POST"])
+    def document_bewerken(rel_path: str) -> str:
+        require_role(app.config["DATABASE_URL"], {"admin", "editor"})
+        safe_rel = Path(rel_path)
+        target = (kb_root / safe_rel).resolve()
+        if kb_root not in [target, *target.parents] or not target.is_file():
+            abort(404)
+
+        metadata, body = split_frontmatter(target.read_text(encoding="utf-8"))
+
+        # Bewerkbare velden — alleen invullen als het formulier een waarde stuurt
+        editable = ["eigenaar", "status", "jurisdictie", "datum", "onderwerp", "bron", "tags"]
+        for veld in editable:
+            waarde = request.form.get(veld, "").strip()
+            if waarde:
+                metadata[veld] = yaml_escape(waarde) if veld not in ("tags",) else waarde
+            elif veld in metadata and request.form.get(f"{veld}_wis"):
+                del metadata[veld]
+
+        fm_lines = ["---"]
+        for k, v in metadata.items():
+            fm_lines.append(f"{k}: {v}")
+        fm_lines.append("---")
+        new_content = "\n".join(fm_lines) + "\n\n" + body
+
+        blob_write(kb_root, target, new_content)
+        load_documents.cache_clear()
+        return redirect(url_for("document_detail", rel_path=rel_path))
+
     return app
 
 
