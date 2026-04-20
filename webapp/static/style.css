@@ -44,7 +44,7 @@ a:hover { color: var(--brand-hover); text-decoration: underline; }
 
 /* ── Header ── */
 .site-header {
-  background: linear-gradient(135deg, var(--ink) 0%, var(--brand-dark) 100%);
+  background: linear-gradient(135deg, #384d55 0%, #8ea8b2 100%);
   color: #fff;
   border-bottom: 4px solid var(--brand);
 }
