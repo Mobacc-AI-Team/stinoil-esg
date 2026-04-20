@@ -1656,7 +1656,7 @@ Geef je beoordeling in dit exacte JSON-formaat (geen extra tekst erbuiten):
                 "content-type": "application/json",
             },
             json={
-                "model": "claude-haiku-4-5",
+                "model": "claude-3-5-haiku-20241022",
                 "max_tokens": 1500,
                 "messages": [{"role": "user", "content": prompt}],
             },
@@ -1719,7 +1719,7 @@ Schrijf een professioneel, helder concept-antwoord in het Nederlands. Verwijs na
                 "content-type": "application/json",
             },
             json={
-                "model": "claude-haiku-4-5",
+                "model": "claude-3-5-haiku-20241022",
                 "max_tokens": 600,
                 "messages": [{"role": "user", "content": prompt}],
             },
