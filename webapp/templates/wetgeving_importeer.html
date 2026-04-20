@@ -7,6 +7,15 @@
 <div class="notice notice-success" style="max-width:960px;margin-bottom:16px">
   {% if status == 'toegevoegd' %}Document succesvol toegevoegd aan de kennisbank.{% else %}Document succesvol ververst vanuit de bronpagina.{% endif %}
 </div>
+{% elif status.startswith('ververst_met_impact:') %}
+<div class="notice notice-success" style="max-width:960px;margin-bottom:16px">
+  Document succesvol ververst. Let op: de volgende uniforme antwoorden kunnen geraakt zijn door deze wijziging:
+  <ul style="margin:8px 0 0;padding-left:20px">
+    {% for slug in status[20:].split('|') %}
+    <li><strong>{{ slug.replace('-', ' ').replace('_', ' ').title() }}</strong></li>
+    {% endfor %}
+  </ul>
+</div>
 {% elif status == 'geen_url' %}
 <div class="notice notice-warning" style="max-width:960px;margin-bottom:16px">
   Geen geldige URL opgegeven. Voer een URL in die begint met http(s)://.

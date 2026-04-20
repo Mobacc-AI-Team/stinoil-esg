@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Collegiale toetsing · Compliance Control{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Werkstroom</div>
+      <h2>Collegiale toetsing</h2>
+      <p>Documenten die ter review staan en wachten op goedkeuring of afwijzing.</p>
+    </div>
+  </div>
+
+  {% if documents %}
+  <div class="cards-grid">
+    {% for doc in documents %}
+    <article class="case-card" style="border-left:3px solid var(--brand)">
+      <div class="case-meta">{{ doc.section_label }} · {{ doc.metadata.get('datum','—') }}</div>
+      <h3><a href="{{ url_for('document_detail', rel_path=doc.rel_path) }}">{{ doc.title }}</a></h3>
+      {% if doc.metadata.get('samenvatting') %}
+      <p>{{ doc.metadata.get('samenvatting') }}</p>
+      {% endif %}
+      {% if doc.metadata.get('reviewer') %}
+      <p style="font-size:.82rem;color:var(--muted)">👤 Reviewer: <strong>{{ doc.metadata.get('reviewer') }}</strong></p>
+      {% endif %}
+      {% if doc.metadata.get('review_opmerking') %}
+      <p style="font-size:.82rem;color:var(--muted);font-style:italic">💬 {{ doc.metadata.get('review_opmerking') }}</p>
+      {% endif %}
+      <div class="pill-row" style="margin-bottom:12px">
+        {% for tag in doc.tags[:3] %}<span class="pill subtle">{{ tag }}</span>{% endfor %}
+      </div>
+      <form method="post" action="{{ url_for('review_actie') }}" style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="hidden" name="rel_path" value="{{ doc.rel_path }}">
+        <input type="text" name="opmerking" placeholder="Optionele opmerking…" style="flex:1;min-width:180px;padding:7px 10px;font-size:.82rem;border:1px solid var(--line);border-radius:6px">
+        <button type="submit" name="actie" value="goedkeuren"
+                style="padding:7px 14px;background:#2d9e5f;color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer">
+          ✓ Goedkeuren
+        </button>
+        <button type="submit" name="actie" value="afwijzen"
+                style="padding:7px 14px;background:var(--brand);color:#fff;border:none;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer">
+          ✗ Afwijzen
+        </button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="notice" style="margin:24px">
+    <strong>Geen items ter review.</strong> Documenten verschijnen hier wanneer ze worden ingediend voor collegiale toetsing.
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

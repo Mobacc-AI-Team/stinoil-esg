@@ -14,6 +14,32 @@
 
 <div id="doc-body" class="doc-layout-{{ document.section_key }}">
 
+{% set doc_status = document.metadata.get('status','') %}
+{% if doc_status in ['concept', 'ter_review', 'definitief'] %}
+<div style="margin-bottom:16px;padding:12px 16px;background:{% if doc_status == 'ter_review' %}#fffbf0{% elif doc_status == 'definitief' %}#f0faf4{% else %}var(--surface-soft){% endif %};border:1px solid {% if doc_status == 'ter_review' %}#f59e0b{% elif doc_status == 'definitief' %}#b7e4c7{% else %}var(--line){% endif %};border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <span style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:{% if doc_status == 'ter_review' %}#92400e{% elif doc_status == 'definitief' %}#1a6e40{% else %}var(--ink-soft){% endif %}">
+    {% if doc_status == 'ter_review' %}⏳ Ter review{% elif doc_status == 'definitief' %}✓ Goedgekeurd{% else %}✏ Concept{% endif %}
+  </span>
+  {% if document.metadata.get('reviewer') %}<span style="font-size:.8rem;color:var(--muted)">Reviewer: {{ document.metadata.get('reviewer') }}</span>{% endif %}
+  {% if document.metadata.get('review_opmerking') %}<span style="font-size:.8rem;color:var(--muted);font-style:italic">💬 {{ document.metadata.get('review_opmerking') }}</span>{% endif %}
+  <div style="margin-left:auto;display:flex;gap:8px">
+    {% if doc_status == 'concept' %}
+    <form method="post" action="{{ url_for('review_actie') }}" style="display:flex;gap:6px;align-items:center">
+      <input type="hidden" name="rel_path" value="{{ document.rel_path }}">
+      <input type="text" name="reviewer" placeholder="Naam reviewer…" style="padding:5px 9px;font-size:.78rem;border:1px solid var(--line);border-radius:5px;width:150px">
+      <button type="submit" name="actie" value="ter_review" style="padding:5px 12px;background:var(--surface-mid);border:1px solid var(--line);border-radius:5px;font-size:.78rem;cursor:pointer">Ter review sturen →</button>
+    </form>
+    {% elif doc_status == 'ter_review' %}
+    <form method="post" action="{{ url_for('review_actie') }}" style="display:flex;gap:6px">
+      <input type="hidden" name="rel_path" value="{{ document.rel_path }}">
+      <button type="submit" name="actie" value="goedkeuren" style="padding:5px 12px;background:#2d9e5f;color:#fff;border:none;border-radius:5px;font-size:.78rem;cursor:pointer">✓ Goedkeuren</button>
+      <button type="submit" name="actie" value="afwijzen" style="padding:5px 12px;background:var(--brand);color:#fff;border:none;border-radius:5px;font-size:.78rem;cursor:pointer">✗ Afwijzen</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
 {# ══════════════════════════════════════════
    ANTWOORDEN & VRAGEN — kaartlayout
    ══════════════════════════════════════════ #}

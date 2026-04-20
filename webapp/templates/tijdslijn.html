@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Tijdslijn · Compliance Control{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head stacked">
+    <div>
+      <div class="eyebrow">Zoeken &amp; navigeren</div>
+      <h2>Tijdslijn per thema</h2>
+    </div>
+    <form method="get" class="filters-grid">
+      <select name="tag" onchange="this.form.submit()" style="min-width:200px">
+        <option value="">— Kies een thema / tag —</option>
+        {% for t in all_tags %}
+        <option value="{{ t }}" {% if tag == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Tonen</button>
+    </form>
+  </div>
+
+  {% if tag and events %}
+  <div style="padding:0 24px 24px;position:relative">
+    <div style="position:absolute;left:44px;top:0;bottom:0;width:2px;background:var(--line)"></div>
+    {% for event in events %}
+    <div style="display:flex;gap:16px;margin-bottom:20px;align-items:flex-start;position:relative">
+      <div style="flex-shrink:0;width:24px;height:24px;background:{% if event.type == 'wetgeving' %}var(--brand){% elif event.type == 'uniforme_antwoorden' %}#2d9e5f{% elif event.type == 'vragen' %}#d97706{% else %}var(--ink-soft){% endif %};border-radius:50%;margin-top:4px;z-index:1;border:2px solid #fff"></div>
+      <div class="card" style="flex:1;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span class="pill subtle" style="font-size:.7rem">{{ event.label }}</span>
+          <span style="font-size:.78rem;color:var(--muted)">{{ event.datum or '—' }}</span>
+        </div>
+        <a href="{{ url_for('document_detail', rel_path=event.doc.rel_path) }}" style="font-weight:600;font-size:.95rem;color:var(--ink);text-decoration:none">
+          {{ event.doc.title }}
+        </a>
+        {% if event.doc.metadata.get('samenvatting') %}
+        <p style="margin:4px 0 0;font-size:.82rem;color:var(--muted)">{{ event.doc.metadata.get('samenvatting')[:120] }}{% if event.doc.metadata.get('samenvatting')|length > 120 %}…{% endif %}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% elif tag %}
+  <p style="padding:24px;color:var(--muted)">Geen documenten gevonden voor thema <strong>{{ tag }}</strong>.</p>
+  {% else %}
+  <p style="padding:24px;color:var(--muted)">Selecteer een thema om de tijdlijn te bekijken.</p>
+  {% endif %}
+</section>
+{% endblock %}

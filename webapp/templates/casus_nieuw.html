@@ -61,6 +61,21 @@
       <h3>Analysevoorstel</h3>
       <span class="pill">Controleer voor opslaan</span>
     </div>
+    {% if preview.duplicate_warnings %}
+    <div style="margin-bottom:16px;padding:14px 18px;background:#fff5f5;border:1px solid #fecaca;border-left:4px solid var(--brand);border-radius:8px">
+      <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--brand);margin-bottom:8px">⚠ Mogelijk vergelijkbare vragen gevonden</div>
+      <p style="margin:0 0 10px;font-size:.85rem;color:var(--ink-soft)">Controleer of deze vraag al eerder is gesteld:</p>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        {% for w in preview.duplicate_warnings %}
+        <a href="{{ url_for('document_detail', rel_path=w.doc.rel_path) }}" target="_blank"
+           style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fff;border:1px solid #fecaca;border-radius:6px;text-decoration:none;color:var(--ink)">
+          <span style="font-size:.88rem;font-weight:600">{{ w.doc.title }}</span>
+          <span style="font-size:.78rem;font-weight:700;color:var(--brand);white-space:nowrap;margin-left:12px">{{ w.similarity }} overeenkomst</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
     <div class="preview-grid">
       <div>
         <strong>Titel</strong>

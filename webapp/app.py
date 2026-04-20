@@ -173,6 +173,7 @@ class IntakePreview:
     attachment_name: str
     attachment_present: bool
     related_documents: list[dict[str, object]]
+    duplicate_warnings: list
 
 
 @dataclass
@@ -484,7 +485,14 @@ def create_app() -> Flask:
             blob_write(kb_root, target, new_content)
             load_documents.cache_clear()
             safe_build_indexes(kb_root)
-            return redirect(url_for("wetgeving_importeer", status="ververst"))
+            # Detecteer impact op uniforme antwoorden
+            impacted_uas = find_impacted_uniform_answers(load_documents(kb_root), list(metadata.get("tags", "").split(",")))
+            impacted_titles = [ua.title for ua in impacted_uas]
+            status_msg = "ververst"
+            if impacted_titles:
+                import urllib.parse
+                status_msg = "ververst_met_impact:" + "|".join(slugify(t) for t in impacted_titles[:3])
+            return redirect(url_for("wetgeving_importeer", status=status_msg))
         except Exception as exc:
             return redirect(url_for("wetgeving_importeer", status=f"fout:{str(exc)[:60]}"))
 
@@ -1003,6 +1011,127 @@ status: {status}
             error=None,
         )
 
+    @app.route("/review")
+    def review_dashboard() -> str:
+        require_login(app.config["DATABASE_URL"])
+        documents = load_documents(kb_root)
+        ter_review = [d for d in documents
+                      if d.metadata.get("status", "").strip('"') == "ter_review"]
+        ter_review.sort(key=lambda d: d.metadata.get("datum", ""), reverse=True)
+        counts = {"uniforme_antwoorden": 0, "antwoorden": 0, "vragen": 0}
+        for d in ter_review:
+            if d.section_key in counts:
+                counts[d.section_key] += 1
+        return render_template("review.html", documents=ter_review, counts=counts)
+
+    @app.route("/review/actie", methods=["POST"])
+    def review_actie() -> str:
+        require_role(app.config["DATABASE_URL"], {"admin", "editor"})
+        rel_path = request.form.get("rel_path", "").strip()
+        actie = request.form.get("actie", "").strip()  # goedkeuren | afwijzen | ter_review
+        opmerking = request.form.get("opmerking", "").strip()
+
+        if not rel_path or not actie:
+            abort(400)
+        safe_rel = Path(rel_path)
+        target = (kb_root / safe_rel).resolve()
+        if kb_root not in [target, *target.parents] or not target.is_file():
+            abort(404)
+
+        raw = target.read_text(encoding="utf-8")
+        metadata, body = split_frontmatter(raw)
+
+        status_map = {"goedkeuren": "definitief", "afwijzen": "concept", "ter_review": "ter_review"}
+        metadata["status"] = status_map.get(actie, metadata.get("status", "concept"))
+        if opmerking:
+            metadata["review_opmerking"] = yaml_escape(opmerking)
+        if actie == "goedkeuren":
+            import datetime as _dt
+            metadata["goedgekeurd_op"] = _dt.date.today().isoformat()
+        if actie == "ter_review":
+            reviewer = request.form.get("reviewer", "").strip()
+            if reviewer:
+                metadata["reviewer"] = yaml_escape(reviewer)
+
+        fm_lines = ["---"]
+        for k, v in metadata.items():
+            fm_lines.append(f"{k}: {v}")
+        fm_lines.append("---")
+        new_content = "\n".join(fm_lines) + "\n\n" + body
+
+        blob_write(kb_root, target, new_content)
+        load_documents.cache_clear()
+
+        if actie in ("goedkeuren", "afwijzen"):
+            return redirect(url_for("review_dashboard"))
+        return redirect(url_for("document_detail", rel_path=rel_path))
+
+    @app.route("/dossier")
+    def dossier() -> str:
+        require_login(app.config["DATABASE_URL"])
+        locatie = request.args.get("locatie", "").strip()
+        organisatie = request.args.get("organisatie", "").strip()
+
+        all_docs = load_documents(kb_root)
+        case_sections = {"vragen", "beoordelingen", "antwoorden"}
+
+        available_locaties = sorted({
+            d.metadata.get("locatie", "").strip('"')
+            for d in all_docs
+            if d.section_key in case_sections and d.metadata.get("locatie", "").strip('"')
+        })
+        available_orgs = sorted({
+            d.metadata.get("organisatie", "").strip('"')
+            for d in all_docs
+            if d.section_key in case_sections
+            and d.metadata.get("organisatie", "").strip('"')
+            and d.metadata.get("organisatie", "").strip('"') not in ("onbekend", "")
+        })
+
+        docs = []
+        filter_label = ""
+        if locatie or organisatie:
+            filter_label = locatie or organisatie
+            for d in all_docs:
+                if d.section_key not in case_sections:
+                    continue
+                if locatie and d.metadata.get("locatie", "").strip('"') == locatie:
+                    docs.append(d)
+                elif organisatie and d.metadata.get("organisatie", "").strip('"') == organisatie:
+                    docs.append(d)
+            docs.sort(key=lambda d: d.metadata.get("datum", ""), reverse=True)
+
+        return render_template(
+            "dossier.html",
+            documents=docs,
+            locatie=locatie,
+            organisatie=organisatie,
+            filter_label=filter_label,
+            available_locaties=available_locaties,
+            available_orgs=available_orgs,
+        )
+
+    @app.route("/tijdslijn")
+    def tijdslijn() -> str:
+        require_login(app.config["DATABASE_URL"])
+        tag = request.args.get("tag", "").strip()
+        all_docs = load_documents(kb_root)
+        all_tags = sorted(unique_values(all_docs, "tags"))
+
+        events = []
+        if tag:
+            for doc in all_docs:
+                if tag.lower() in [t.lower() for t in doc.tags]:
+                    events.append({
+                        "doc": doc,
+                        "datum": doc.metadata.get("datum", ""),
+                        "type": doc.section_key,
+                        "label": doc.section_label,
+                    })
+            events.sort(key=lambda e: (e["datum"] or "0000-00-00"))
+
+        return render_template("tijdslijn.html", tag=tag, events=events, all_tags=all_tags)
+
     return app
 
 
@@ -1387,6 +1516,8 @@ def create_case_from_form(
     category_list = preview.categories
     summary = summarize_extracted_text(preview.intake_text, preview.titel, max_len=220)
     suggested_regulations = preview.suggested_regulations
+    # AI concept-antwoord automatisch opstellen
+    concept_antwoord = draft_concept_answer(kb_root, preview.intake_text, tag_list, preview.titel)
     vraag_rel = relative_path(kb_root, vraag_path)
     beoordeling_rel = relative_path(kb_root, beoordeling_path)
     antwoord_rel = relative_path(kb_root, antwoord_path)
@@ -1433,6 +1564,7 @@ def create_case_from_form(
         categories=category_list,
         summary=summary,
         suggested_regulations=suggested_regulations,
+        concept_antwoord=concept_antwoord,
     ))
 
     return vraag_path, beoordeling_path, antwoord_path
@@ -1540,6 +1672,113 @@ Geef je beoordeling in dit exacte JSON-formaat (geen extra tekst erbuiten):
         return _json.loads(raw)
     except Exception as exc:
         return {"fout": f"AI-toetsing mislukt: {str(exc)[:120]}"}
+
+
+def draft_concept_answer(
+    kb_root: Path,
+    vraag_text: str,
+    tags: list[str],
+    titel: str,
+) -> str:
+    """Laat Claude automatisch een concept-antwoord opstellen op basis van de vraag en KB-wetgeving."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if not api_key:
+        return "*(Concept-antwoord nog op te stellen — ANTHROPIC_API_KEY niet geconfigureerd)*"
+
+    documents = load_documents(kb_root)
+    q_tags = {t.lower().strip() for t in tags}
+    relevant_regs = []
+    for doc in documents:
+        if doc.section_key != "wetgeving":
+            continue
+        doc_tags = {t.lower().strip() for t in doc.tags}
+        if q_tags & doc_tags:
+            relevant_regs.append(
+                f"- **{doc.title}**: {doc.metadata.get('samenvatting', doc.body[:200])}"
+            )
+    wetgeving_context = "\n".join(relevant_regs[:8]) or "(geen relevante wetgeving gevonden)"
+
+    prompt = f"""Je bent een compliance-expert bij Mobacc. Stel een beknopt concept-antwoord op voor de volgende vraag.
+
+**Vraag:** {titel}
+
+**Vraagtekst:**
+{vraag_text[:1200]}
+
+**Relevante wetgeving in de kennisbank:**
+{wetgeving_context}
+
+Schrijf een professioneel, helder concept-antwoord in het Nederlands. Verwijs naar concrete wetgeving waar relevant. Maximaal 300 woorden. Geef ALLEEN de antwoordtekst, geen inleiding of toelichting."""
+
+    try:
+        resp = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-haiku-4-5",
+                "max_tokens": 600,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()["content"][0]["text"].strip()
+    except Exception:
+        return "*(Concept-antwoord kon niet automatisch worden opgesteld. Stel dit handmatig in.)*"
+
+
+def detect_duplicate_questions(
+    documents: tuple,
+    titel: str,
+    intake_text: str,
+    tags: list[str],
+    threshold: float = 0.30,
+) -> list[dict]:
+    """Detecteert bestaande vragen die lijken op de nieuwe vraag."""
+    input_tokens = tokenize_similarity_text(f"{titel} {intake_text}")
+    input_tag_set = {t.lower() for t in tags}
+
+    results = []
+    for doc in documents:
+        if doc.section_key != "vragen":
+            continue
+        doc_tokens = tokenize_similarity_text(f"{doc.title} {doc.body}")
+        if not input_tokens or not doc_tokens:
+            continue
+        overlap = len(input_tokens & doc_tokens)
+        union = len(input_tokens | doc_tokens)
+        text_score = overlap / union if union > 0 else 0
+        tag_bonus = len(input_tag_set & {t.lower() for t in doc.tags}) * 0.15
+        score = text_score + tag_bonus
+        if score >= threshold:
+            results.append({
+                "doc": doc,
+                "score": score,
+                "similarity": f"{int(min(score * 100, 99))}%",
+            })
+
+    results.sort(key=lambda x: -x["score"])
+    return results[:4]
+
+
+def find_impacted_uniform_answers(
+    documents: tuple,
+    updated_tags: list[str],
+) -> list:
+    """Geeft uniforme antwoorden terug die dezelfde tags hebben als een bijgewerkt wetgevingsdocument."""
+    upd_tags = {t.lower().strip() for t in updated_tags}
+    impacted = []
+    for doc in documents:
+        if doc.section_key != "uniforme_antwoorden":
+            continue
+        ua_tags = {t.lower().strip() for t in doc.tags}
+        if upd_tags & ua_tags:
+            impacted.append(doc)
+    return impacted
 
 
 def safe_build_indexes(kb_root: Path) -> None:
@@ -1723,6 +1962,10 @@ def build_case_preview(
     if not category_list:
         category_list = derive_categories_from_text(f"{resolved_title} {intake_text}")
 
+    duplicate_warnings = detect_duplicate_questions(
+        load_documents(kb_root), resolved_title, intake_text, tag_list
+    )
+
     return IntakePreview(
         afzender_type=normalized_type,
         organisatie=organisatie or "onbekend",
@@ -1736,6 +1979,7 @@ def build_case_preview(
         attachment_name=upload_name,
         attachment_present=bool(upload_name and upload_content),
         related_documents=find_related_documents(kb_root, resolved_title, intake_text, tag_list, category_list),
+        duplicate_warnings=duplicate_warnings,
     )
 
 
@@ -2011,8 +2255,10 @@ def render_case_answer_markdown(
     categories: list[str],
     summary: str,
     suggested_regulations: list[str],
+    concept_antwoord: str = "",
 ) -> str:
     regulation_block = "\n".join(f"- {item}" for item in suggested_regulations) if suggested_regulations else "- Nog aan te vullen"
+    antwoord_tekst = concept_antwoord or "*(Nog op te stellen)*"
     return f"""---
 titel: {yaml_escape(titel)}
 datum: {datum}
@@ -2031,7 +2277,7 @@ samenvatting: {yaml_escape(summary)}
 {titel}
 
 ## Conceptantwoord
-Nog op te stellen.
+{antwoord_tekst}
 
 ## Onderbouwing
 - Toets aan beoordeling: `{beoordeling_rel}`
