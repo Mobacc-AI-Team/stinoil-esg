@@ -50,33 +50,41 @@ a:hover { color: var(--brand-hover); text-decoration: underline; }
 }
 
 .header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 20px 0 14px;
+  padding: 18px 0 12px;
 }
 
 .header-brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 14px;
+  text-decoration: none !important;
 }
 
 .site-logo { height: 44px; width: auto; }
 
+/* Eyebrow in header — separate class so cards use their own */
+.header-eyebrow {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+  margin-bottom: 1px;
+}
+
+/* Eyebrow used everywhere else (cards, sections) */
 .eyebrow {
   font-size: .7rem;
   font-weight: 700;
   letter-spacing: .1em;
   text-transform: uppercase;
-  color: rgba(255,255,255,.45);
-  margin-bottom: 1px;
+  color: var(--brand);
+  margin-bottom: 4px;
 }
 
 .site-title {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: -.01em;
   line-height: 1.2;
@@ -85,8 +93,8 @@ a:hover { color: var(--brand-hover); text-decoration: underline; }
 .site-title a:hover { text-decoration: none; color: rgba(255,255,255,.85); }
 
 .site-subtitle {
-  margin: 0;
-  font-size: .82rem;
+  margin: 2px 0 0;
+  font-size: .78rem;
   color: rgba(255,255,255,.45);
   white-space: nowrap;
 }
@@ -426,7 +434,7 @@ tr:hover td { background: var(--surface-soft); }
 
 /* ── Responsive ── */
 @media (max-width: 960px) {
-  .header-top { flex-wrap: wrap; }
+  .site-subtitle { display: none; }
   .site-subtitle { display: none; }
   .action-cards  { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .stats-grid    { grid-template-columns: repeat(2,minmax(0,1fr)); }

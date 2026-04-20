@@ -10,14 +10,14 @@
     <header class="site-header">
       <div class="container">
         <div class="header-top">
-          <div class="header-brand">
-            <a href="{{ url_for('dashboard') }}"><img src="/logo.png" alt="Mobacc logo" class="site-logo"></a>
+          <a href="{{ url_for('dashboard') }}" class="header-brand">
+            <img src="/logo.png" alt="Mobacc logo" class="site-logo">
             <div>
-              <div class="eyebrow">Mobacc</div>
+              <div class="header-eyebrow">Mobacc</div>
               <h1 class="site-title"><a href="{{ url_for('dashboard') }}">Compliance Control</a></h1>
+              <p class="site-subtitle">Wetgeving bewaken · Vragen rubriceren · Uniform beantwoorden</p>
             </div>
-          </div>
-          <p class="site-subtitle">Wetgeving bewaken · Vragen rubriceren · Uniform beantwoorden</p>
+          </a>
         </div>
         <nav class="main-nav">
           <a href="{{ url_for('wetgeving') }}">Wetgeving</a>
