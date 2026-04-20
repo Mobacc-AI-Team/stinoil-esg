@@ -7,15 +7,55 @@
       <div class="eyebrow">Zoeken &amp; navigeren</div>
       <h2>Tijdslijn per thema</h2>
     </div>
-    <form method="get" class="filters-grid">
-      <select name="tag" onchange="this.form.submit()" style="min-width:200px">
-        <option value="">— Kies een thema / tag —</option>
-        {% for t in all_tags %}
-        <option value="{{ t }}" {% if tag == t %}selected{% endif %}>{{ t }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit">Tonen</button>
+    <form method="get" style="display:flex;gap:8px;align-items:center">
+      <div style="position:relative">
+        <input type="text" id="tag-input" name="tag" value="{{ tag }}" placeholder="Typ een thema…"
+               autocomplete="off"
+               style="padding:9px 13px;border:1px solid var(--line);border-radius:8px;font-size:.88rem;width:260px">
+        <ul id="tag-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:0 0 8px 8px;margin:0;padding:0;list-style:none;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.08);max-height:220px;overflow-y:auto"></ul>
+      </div>
+      <button type="submit" style="padding:9px 16px;border-radius:8px;font-size:.88rem">Tonen</button>
     </form>
+
+    <script>
+    (function(){
+      const tags = {{ all_tags | tojson }};
+      const input = document.getElementById('tag-input');
+      const list  = document.getElementById('tag-suggestions');
+
+      function show(matches) {
+        list.innerHTML = '';
+        if (!matches.length) { list.style.display = 'none'; return; }
+        matches.forEach(function(t) {
+          const li = document.createElement('li');
+          li.textContent = t;
+          li.style.cssText = 'padding:8px 13px;cursor:pointer;font-size:.88rem;border-bottom:1px solid var(--line)';
+          li.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            input.value = t;
+            list.style.display = 'none';
+            input.form.submit();
+          });
+          li.addEventListener('mouseover', function(){ this.style.background='var(--surface-soft)'; });
+          li.addEventListener('mouseout',  function(){ this.style.background=''; });
+          list.appendChild(li);
+        });
+        list.style.display = 'block';
+      }
+
+      input.addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        if (!q) { list.style.display = 'none'; return; }
+        show(tags.filter(function(t){ return t.toLowerCase().includes(q); }).slice(0, 12));
+      });
+      input.addEventListener('focus', function() {
+        if (this.value.trim()) input.dispatchEvent(new Event('input'));
+      });
+      document.addEventListener('click', function(e) {
+        if (!list.contains(e.target) && e.target !== input) list.style.display = 'none';
+      });
+    })();
+    </script>
   </div>
 
   {% if tag and events %}
