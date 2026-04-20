@@ -8,14 +8,16 @@
   </head>
   <body>
     <header class="site-header">
-      <div class="container header-inner">
-        <div class="header-brand">
-          <a href="{{ url_for('dashboard') }}"><img src="/logo.png" alt="Mobacc logo" class="site-logo"></a>
-          <div>
-            <div class="eyebrow">Mobacc</div>
-            <h1 class="site-title"><a href="{{ url_for('dashboard') }}">Compliance Control</a></h1>
-            <p class="site-subtitle">Wetgeving bewaken · Vragen rubriceren · Uniform beantwoorden</p>
+      <div class="container">
+        <div class="header-top">
+          <div class="header-brand">
+            <a href="{{ url_for('dashboard') }}"><img src="/logo.png" alt="Mobacc logo" class="site-logo"></a>
+            <div>
+              <div class="eyebrow">Mobacc</div>
+              <h1 class="site-title"><a href="{{ url_for('dashboard') }}">Compliance Control</a></h1>
+            </div>
           </div>
+          <p class="site-subtitle">Wetgeving bewaken · Vragen rubriceren · Uniform beantwoorden</p>
         </div>
         <nav class="main-nav">
           <a href="{{ url_for('wetgeving') }}">Wetgeving</a>

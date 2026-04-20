@@ -45,12 +45,12 @@
 
     <div style="display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:start;padding:10px 0;border-bottom:1px solid var(--line)">
 
-      {{/* kolom 1: checkbox */}}
+      {# kolom 1: checkbox #}
       <div style="padding-top:3px">
         <input type="checkbox" name="item_{{ i }}" value="1" style="width:16px;height:16px;cursor:pointer">
       </div>
 
-      {{/* kolom 2: naam + type + URL */}}
+      {# kolom 2: naam + type + URL #}
       <div>
         <div style="font-weight:600;margin-bottom:2px">{{ item.naam }}</div>
         <div class="muted" style="font-size:.83rem;margin-bottom:4px">{{ item.type }}</div>
@@ -62,7 +62,7 @@
         </div>
       </div>
 
-      {{/* kolom 3: methode keuze */}}
+      {# kolom 3: methode keuze #}
       <div style="display:flex;flex-direction:column;gap:6px;min-width:160px">
         <label style="display:flex;align-items:center;gap:6px;font-size:.88rem;cursor:pointer">
           <input type="radio" name="method_{{ i }}" value="url" checked
