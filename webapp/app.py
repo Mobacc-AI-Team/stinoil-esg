@@ -408,6 +408,7 @@ def create_app() -> Flask:
                         tags=request.form.get("tags", "").strip(),
                         categories=request.form.get("categorieen", "").strip(),
                         source_label=request.form.get("bron", "").strip(),
+                        eigenaar=request.form.get("eigenaar", "").strip(),
                     )
                 except ValueError:
                     return redirect(url_for("wetgeving", status="ongeldige_url"))
@@ -433,6 +434,7 @@ def create_app() -> Flask:
                     tags=request.form.get("tags", "").strip(),
                     categories=request.form.get("categorieen", "").strip(),
                     source_label=request.form.get("bron", "").strip(),
+                    eigenaar=request.form.get("eigenaar", "").strip(),
                 )
             except ValueError:
                 return redirect(url_for("wetgeving", status="ongeldig_bestand"))
@@ -1374,6 +1376,7 @@ def create_regulation_record_from_upload(
     tags: str,
     categories: str,
     source_label: str,
+    eigenaar: str = "",
 ) -> Path:
     suffix = Path(upload_name).suffix.lower()
     if suffix not in ALLOWED_UPLOAD_EXTENSIONS:
@@ -1414,6 +1417,7 @@ def create_regulation_record_from_upload(
         tags=tag_list,
         categories=category_list,
         extracted_text=extracted_text,
+        eigenaar=eigenaar,
         timestamp=timestamp,
     )
     blob_write(kb_root, regulation_path, md_content)
@@ -1437,6 +1441,7 @@ def create_regulation_record_from_url(
     tags: str,
     categories: str,
     source_label: str,
+    eigenaar: str = "",
 ) -> Path:
     parsed = urlparse(source_url)
     if parsed.scheme not in URL_ALLOWED_SCHEMES:
@@ -1463,6 +1468,7 @@ def create_regulation_record_from_url(
         tags=tags,
         categories=categories,
         source_label=source_label or source_url,
+        eigenaar=eigenaar,
     )
 
 
@@ -2410,9 +2416,11 @@ def render_uploaded_regulation_markdown(
     categories: list[str],
     extracted_text: str,
     timestamp: str,
+    eigenaar: str = "",
 ) -> str:
     searchable_text = extracted_text.strip() or "Geen extraheerbare tekst gevonden."
     categories_block = "\n".join(f"- {category}" for category in categories) if categories else "- Nog te bepalen"
+    eigenaar_line = f"\neigenaar: {yaml_escape(eigenaar)}" if eigenaar else ""
     return f"""---
 titel: {yaml_escape(title)}
 datum: {timestamp}
@@ -2420,7 +2428,7 @@ jurisdictie: {yaml_escape(jurisdiction)}
 onderwerp: {yaml_escape(subject)}
 bron: {yaml_escape(source_label)}
 bronbestand: {yaml_escape(source_rel)}
-status: actief
+status: actief{eigenaar_line}
 tags: {format_yaml_list(tags)}
 categorieen: {format_yaml_list(categories)}
 samenvatting: {yaml_escape(summary)}

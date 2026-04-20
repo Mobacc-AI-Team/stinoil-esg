@@ -53,8 +53,9 @@
     <table>
       <thead>
         <tr>
-          <th style="width:35%">Titel</th>
+          <th style="width:32%">Titel</th>
           <th>Onderwerp</th>
+          <th>Eigenaar</th>
           <th>Categorieën</th>
           <th>Status</th>
           <th>Datum</th>
@@ -65,6 +66,11 @@
         <tr>
           <td><a href="{{ url_for('document_detail', rel_path=doc.rel_path, q=query) }}">{{ doc.title }}</a></td>
           <td>{{ doc.metadata.get('onderwerp', '—') }}</td>
+          <td>
+            {% if doc.metadata.get('eigenaar') %}
+            <span class="pill subtle" style="font-size:.78rem">{{ doc.metadata.get('eigenaar') }}</span>
+            {% else %}—{% endif %}
+          </td>
           <td>
             {% for cat in doc.categories[:3] %}
             <span class="pill subtle" style="font-size:.78rem">{{ cat }}</span>

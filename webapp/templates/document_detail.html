@@ -202,7 +202,7 @@
       {% endif %}
 
       <dl style="margin:0;display:grid;gap:8px">
-        {% for key in ['datum','jurisdictie','status','onderwerp','bron'] %}
+        {% for key in ['datum','jurisdictie','eigenaar','status','onderwerp','bron'] %}
         {% if document.metadata.get(key) %}
         <div style="border-top:1px solid var(--line);padding-top:8px">
           <dt style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px">{{ key }}</dt>

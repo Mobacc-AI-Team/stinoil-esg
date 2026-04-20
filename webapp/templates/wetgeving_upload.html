@@ -71,6 +71,18 @@
       <span>Bronlabel</span>
       <input type="text" name="bron" placeholder="Eur-Lex, overheid.nl, interne publicatie">
     </label>
+    <label>
+      <span>Eigenaar / verantwoordelijke afdeling</span>
+      <select name="eigenaar">
+        <option value="">— Kies afdeling —</option>
+        <option value="HSE">HSE</option>
+        <option value="QA">QA</option>
+        <option value="Finance">Finance</option>
+        <option value="ICT">ICT</option>
+        <option value="R&D">R&amp;D</option>
+        <option value="HR">HR</option>
+      </select>
+    </label>
     <div class="form-actions full-width">
       <button type="submit">Toevoegen aan kennisbank</button>
       <a class="button-link subtle" href="{{ url_for('wetgeving_importeer') }}">Of importeer uit het register →</a>
