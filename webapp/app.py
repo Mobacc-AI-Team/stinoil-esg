@@ -19,7 +19,7 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from chatgpt_export_to_kb import format_yaml_list, slugify, yaml_escape
-import blob_store
+from . import blob_store
 
 try:
     from docx import Document as DocxDocument
