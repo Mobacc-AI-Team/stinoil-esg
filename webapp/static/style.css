@@ -138,7 +138,12 @@ a:hover { color: var(--brand-hover); text-decoration: underline; }
   box-shadow: var(--shadow-sm);
   padding: 24px;
 }
+/* margin alleen buiten grid/flex contexten */
 .card + .card { margin-top: 20px; }
+.stats-grid .card + .card,
+.action-cards .card + .card,
+.two-col .card + .card,
+.cards-grid .card + .card { margin-top: 0; }
 
 .subtle-card {
   background: var(--surface-soft);
@@ -198,8 +203,9 @@ h3 { margin: 0 0 8px; font-size: 1.05rem; font-weight: 600; }
 .detail-layout { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
 
 /* ── Stats ── */
-.stat span    { display: block; color: var(--muted); font-size: .82rem; margin-bottom: 6px; }
-.stat strong  { font-size: 1.9rem; font-weight: 700; }
+.stat         { display: flex; flex-direction: column; justify-content: space-between; padding: 20px 24px; }
+.stat span    { display: block; color: var(--muted); font-size: .82rem; margin-bottom: 8px; }
+.stat strong  { font-size: 2rem; font-weight: 700; line-height: 1; }
 
 /* ── Action cards (dashboard) ── */
 .action-cards {
@@ -212,10 +218,12 @@ h3 { margin: 0 0 8px; font-size: 1.05rem; font-weight: 600; }
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  padding: 18px;
+  padding: 20px;
   color: var(--ink);
   border-radius: var(--radius);
   transition: box-shadow .15s, transform .15s;
+  /* gelijke hoogte binnen de gridrij */
+  align-self: stretch;
 }
 .action-card:hover {
   transform: translateY(-2px);
