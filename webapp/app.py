@@ -1622,7 +1622,7 @@ def write_temp_upload(upload_name: str, upload_content: bytes) -> Path:
     suffix = Path(upload_name).suffix.lower()
     if suffix not in ALLOWED_UPLOAD_EXTENSIONS:
         raise ValueError("Unsupported file type")
-    temp_dir = WEBAPP_DIR.parent / ".tmp_uploads"
+    temp_dir = Path("/tmp") / ".tmp_uploads"
     temp_dir.mkdir(parents=True, exist_ok=True)
     path = unique_path(temp_dir / f"preview{suffix}")
     path.write_bytes(upload_content)
