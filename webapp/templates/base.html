@@ -38,6 +38,7 @@
           <a href="{{ url_for('vragen_analyse') }}">Uniforme antwoorden</a>
           <a href="{{ url_for('dossier') }}" class="nav-link {% if request.endpoint == 'dossier' %}active{% endif %}">Dossiers</a>
           <a href="{{ url_for('tijdslijn') }}" class="nav-link {% if request.endpoint == 'tijdslijn' %}active{% endif %}">Tijdslijn</a>
+          <a href="{{ url_for('stilstanden_dashboard') }}" class="nav-link {% if request.endpoint in ('stilstanden_dashboard','stilstanden_registreer','stilstanden_importeer','stilstanden_redencodes') %}active{% endif %}">Stilstanden</a>
           {% if current_user %}
           <a href="{{ url_for('logout') }}">Uitloggen</a>
           {% elif database_configured %}

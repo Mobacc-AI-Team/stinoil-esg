@@ -1186,6 +1186,251 @@ status: {status}
         load_documents.cache_clear()
         return redirect(url_for("document_detail", rel_path=rel_path))
 
+    # ── Stilstanden ──────────────────────────────────────────────────────────
+
+    @app.route("/stilstanden")
+    def stilstanden_dashboard() -> str:
+        db = app.config["DATABASE_URL"]
+        from datetime import date
+        today = date.today()
+        week = int(request.args.get("week", today.isocalendar()[1]))
+        jaar = int(request.args.get("jaar", today.isocalendar()[0]))
+
+        top3: dict[int, list[dict]] = {}
+        totalen: dict[int, int] = {}
+        conn = get_db_connection(db)
+        if conn:
+            with conn:
+                with conn.cursor() as cur:
+                    for lijn in range(1, 5):
+                        cur.execute(
+                            """
+                            SELECT r.code, r.label, SUM(s.minuten) AS totaal
+                            FROM stilstanden s
+                            JOIN stilstand_redencodes r ON r.code = s.redencode
+                            WHERE s.lijn = %s AND s.weeknummer = %s AND s.jaar = %s
+                            GROUP BY r.code, r.label
+                            ORDER BY totaal DESC
+                            LIMIT 3
+                            """,
+                            (lijn, week, jaar),
+                        )
+                        top3[lijn] = [
+                            {"code": row[0], "label": row[1], "minuten": int(row[2])}
+                            for row in cur.fetchall()
+                        ]
+                        cur.execute(
+                            "SELECT COALESCE(SUM(minuten),0) FROM stilstanden WHERE lijn=%s AND weeknummer=%s AND jaar=%s",
+                            (lijn, week, jaar),
+                        )
+                        totalen[lijn] = int(cur.fetchone()[0])
+
+        return render_template(
+            "stilstanden_dashboard.html",
+            top3=top3,
+            totalen=totalen,
+            week=week,
+            jaar=jaar,
+            prev_week=week - 1 if week > 1 else 52,
+            prev_jaar=jaar if week > 1 else jaar - 1,
+            next_week=week + 1 if week < 52 else 1,
+            next_jaar=jaar if week < 52 else jaar + 1,
+        )
+
+    @app.route("/stilstanden/registreer", methods=["GET", "POST"])
+    def stilstanden_registreer() -> str:
+        db = app.config["DATABASE_URL"]
+        from datetime import date
+        today = date.today()
+        week = today.isocalendar()[1]
+        jaar = today.isocalendar()[0]
+
+        conn = get_db_connection(db)
+        redencodes: list[dict] = []
+        orders_per_lijn: dict[int, list[str]] = {1: [], 2: [], 3: [], 4: []}
+        if conn:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT code, label FROM stilstand_redencodes WHERE is_subcode = true ORDER BY code"
+                    )
+                    redencodes = [{"code": r[0], "label": r[1]} for r in cur.fetchall()]
+                    for lijn in range(1, 5):
+                        cur.execute(
+                            "SELECT DISTINCT productieorder FROM stilstand_orders WHERE lijn=%s AND weeknummer=%s AND jaar=%s ORDER BY productieorder",
+                            (lijn, week, jaar),
+                        )
+                        orders_per_lijn[lijn] = [r[0] for r in cur.fetchall()]
+
+        melding = None
+        if request.method == "POST":
+            lijn = int(request.form.get("lijn", 1))
+            order = request.form.get("order", "").strip()
+            minuten = request.form.get("minuten", "").strip()
+            redencode = request.form.get("redencode", "").strip()
+            if not order or not minuten or not redencode:
+                melding = {"type": "error", "tekst": "Vul alle velden in."}
+            else:
+                try:
+                    min_int = int(minuten)
+                    if conn:
+                        with conn:
+                            with conn.cursor() as cur:
+                                cur.execute(
+                                    "INSERT INTO stilstanden (lijn,weeknummer,jaar,productieorder,minuten,redencode) VALUES (%s,%s,%s,%s,%s,%s)",
+                                    (lijn, week, jaar, order, min_int, redencode),
+                                )
+                        melding = {"type": "ok", "tekst": f"Stilstand geregistreerd: {order} – {min_int} min."}
+                except ValueError:
+                    melding = {"type": "error", "tekst": "Minuten moet een getal zijn."}
+
+        return render_template(
+            "stilstanden_registreer.html",
+            redencodes=redencodes,
+            orders_per_lijn=orders_per_lijn,
+            melding=melding,
+            week=week,
+            jaar=jaar,
+        )
+
+    @app.route("/stilstanden/importeer", methods=["GET", "POST"])
+    def stilstanden_importeer() -> str:
+        db = app.config["DATABASE_URL"]
+        melding = None
+        imported = 0
+
+        if request.method == "POST":
+            bestand = request.files.get("tme_bestand")
+            if not bestand or not bestand.filename:
+                melding = {"type": "error", "tekst": "Selecteer een TME Excel-bestand."}
+            else:
+                try:
+                    import openpyxl
+                    from datetime import date as _date
+
+                    wb = openpyxl.load_workbook(bestand, data_only=True)
+                    conn = get_db_connection(db)
+
+                    KOLOM_MAP = {
+                        "productieorder": ["Productieorder", "Order", "Ordernummer"],
+                        "normtijd":       ["normtijd(min)", "Normtijd", "normtijd"],
+                        "doorlooptijd":   ["doorlooptijd(min)", "Doorlooptijd", "doorlooptijd"],
+                        "afwijking":      ["afwijking tijd van norm", "Afwijking", "afwijking"],
+                        "startdatum":     ["Startdatum", "startdatum", "Datum"],
+                    }
+
+                    for lijn_idx, sheet_name in enumerate(wb.sheetnames[:4], start=1):
+                        ws = wb[sheet_name]
+                        headers = [str(c.value).strip() if c.value else "" for c in next(ws.iter_rows(min_row=1, max_row=1))]
+
+                        def col(namen: list[str]) -> int | None:
+                            for naam in namen:
+                                if naam in headers:
+                                    return headers.index(naam)
+                            return None
+
+                        ci_order     = col(KOLOM_MAP["productieorder"])
+                        ci_norm      = col(KOLOM_MAP["normtijd"])
+                        ci_loop      = col(KOLOM_MAP["doorlooptijd"])
+                        ci_afwijk    = col(KOLOM_MAP["afwijking"])
+                        ci_datum     = col(KOLOM_MAP["startdatum"])
+
+                        if ci_order is None:
+                            continue
+
+                        for row in ws.iter_rows(min_row=2, values_only=True):
+                            order_val = row[ci_order] if ci_order is not None else None
+                            if not order_val:
+                                continue
+                            order_str = str(order_val).strip()
+
+                            datum_val = row[ci_datum] if ci_datum is not None else None
+                            if datum_val and hasattr(datum_val, "isocalendar"):
+                                iso = datum_val.isocalendar()
+                                weeknummer, jaar = iso[1], iso[0]
+                            else:
+                                today = _date.today()
+                                iso = today.isocalendar()
+                                weeknummer, jaar = iso[1], iso[0]
+
+                            normtijd    = row[ci_norm]    if ci_norm    is not None else None
+                            doorlooptijd = row[ci_loop]   if ci_loop    is not None else None
+                            afwijking   = row[ci_afwijk]  if ci_afwijk  is not None else None
+
+                            try:
+                                normtijd    = float(normtijd)    if normtijd    is not None else None
+                                doorlooptijd = float(doorlooptijd) if doorlooptijd is not None else None
+                                afwijking   = float(afwijking)   if afwijking   is not None else None
+                            except (TypeError, ValueError):
+                                normtijd = doorlooptijd = afwijking = None
+
+                            if conn:
+                                with conn:
+                                    with conn.cursor() as cur:
+                                        cur.execute(
+                                            "SELECT id FROM stilstand_orders WHERE lijn=%s AND productieorder=%s AND weeknummer=%s AND jaar=%s",
+                                            (lijn_idx, order_str, weeknummer, jaar),
+                                        )
+                                        if cur.fetchone() is None:
+                                            cur.execute(
+                                                "INSERT INTO stilstand_orders (lijn,weeknummer,jaar,productieorder,normtijd_min,doorlooptijd_min,afwijking_min) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                                                (lijn_idx, weeknummer, jaar, order_str, normtijd, doorlooptijd, afwijking),
+                                            )
+                                            imported += 1
+
+                    melding = {"type": "ok", "tekst": f"{imported} nieuwe orders geïmporteerd."}
+                except Exception as exc:
+                    melding = {"type": "error", "tekst": f"Importfout: {exc}"}
+
+        return render_template("stilstanden_importeer.html", melding=melding, imported=imported)
+
+    @app.route("/stilstanden/redencodes", methods=["GET", "POST"])
+    def stilstanden_redencodes() -> str:
+        db = app.config["DATABASE_URL"]
+        melding = None
+        conn = get_db_connection(db)
+
+        if request.method == "POST":
+            actie = request.form.get("actie")
+            if actie == "toevoegen":
+                code  = request.form.get("code", "").strip()
+                label = request.form.get("label", "").strip()
+                cat   = request.form.get("categorie", "").strip()
+                is_sub = request.form.get("is_subcode") == "1"
+                if not code or not label or not cat:
+                    melding = {"type": "error", "tekst": "Vul code, label en categorie in."}
+                elif conn:
+                    with conn:
+                        with conn.cursor() as cur:
+                            cur.execute("SELECT code FROM stilstand_redencodes WHERE code=%s", (code,))
+                            if cur.fetchone():
+                                melding = {"type": "error", "tekst": f"Code {code} bestaat al."}
+                            else:
+                                cur.execute(
+                                    "INSERT INTO stilstand_redencodes (code,label,categorie,is_subcode) VALUES (%s,%s,%s,%s)",
+                                    (code, label, cat, is_sub),
+                                )
+                                melding = {"type": "ok", "tekst": f"Code {code} toegevoegd."}
+            elif actie == "verwijderen":
+                code = request.form.get("code", "").strip()
+                if conn and code:
+                    with conn:
+                        with conn.cursor() as cur:
+                            cur.execute("DELETE FROM stilstand_redencodes WHERE code=%s", (code,))
+                    melding = {"type": "ok", "tekst": f"Code {code} verwijderd."}
+
+        codes: list[dict] = []
+        if conn:
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT code, label, categorie, is_subcode FROM stilstand_redencodes ORDER BY code")
+                    codes = [
+                        {"code": r[0], "label": r[1], "categorie": r[2], "is_subcode": r[3]}
+                        for r in cur.fetchall()
+                    ]
+
+        return render_template("stilstanden_redencodes.html", codes=codes, melding=melding)
+
     return app
 
 
@@ -1882,6 +2127,84 @@ def ensure_database_schema(database_url: str) -> None:
             cur.execute("SELECT COUNT(*) FROM app_users")
             if cur.fetchone()[0] == 0:
                 seed_default_users(cur)
+
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS stilstand_redencodes (
+                    code TEXT PRIMARY KEY,
+                    label TEXT NOT NULL,
+                    categorie TEXT NOT NULL,
+                    is_subcode BOOLEAN NOT NULL DEFAULT false
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS stilstand_orders (
+                    id SERIAL PRIMARY KEY,
+                    lijn INTEGER NOT NULL,
+                    weeknummer INTEGER NOT NULL,
+                    jaar INTEGER NOT NULL,
+                    productieorder TEXT NOT NULL,
+                    normtijd_min NUMERIC,
+                    doorlooptijd_min NUMERIC,
+                    afwijking_min NUMERIC,
+                    geimporteerd_op TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS stilstanden (
+                    id SERIAL PRIMARY KEY,
+                    lijn INTEGER NOT NULL,
+                    weeknummer INTEGER NOT NULL,
+                    jaar INTEGER NOT NULL,
+                    productieorder TEXT NOT NULL,
+                    minuten INTEGER NOT NULL,
+                    redencode TEXT NOT NULL REFERENCES stilstand_redencodes(code),
+                    geregistreerd_op TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+                """
+            )
+            cur.execute("SELECT COUNT(*) FROM stilstand_redencodes")
+            if cur.fetchone()[0] == 0:
+                seed_stilstand_redencodes(cur)
+
+
+STILSTAND_REDENCODES_DEFAULT = [
+    ("1000", "Materiaal",                  "1000 Materiaal",      False),
+    ("1100", "Materiaal niet aanwezig",    "1000 Materiaal",      True),
+    ("1200", "Materiaal foutief",          "1000 Materiaal",      True),
+    ("2000", "Organisatie",                "2000 Organisatie",    False),
+    ("2100", "Orderfout",                  "2000 Organisatie",    True),
+    ("2200", "Personeel",                  "2000 Organisatie",    True),
+    ("2210", "Ziek",                       "2000 Organisatie",    True),
+    ("2220", "Te weinig personeel",        "2000 Organisatie",    True),
+    ("3000", "Machine",                    "3000 Machine",        False),
+    ("3100", "Vulmachine",                 "3000 Machine",        True),
+    ("3200", "Checkweigher",               "3000 Machine",        True),
+    ("3300", "Waterbad / Leakdetectie",    "3000 Machine",        True),
+    ("3400", "Sproeikopmachine",           "3000 Machine",        True),
+    ("3500", "Doppenmachine",              "3000 Machine",        True),
+    ("3600", "Etiketeermachine",           "3000 Machine",        True),
+    ("3700", "Rietjesmachine",             "3000 Machine",        True),
+    ("3800", "Dozensluitmachine",          "3000 Machine",        True),
+    ("4000", "Mengafdeling",               "4000 Mengafdeling",   False),
+    ("4100", "Spoelen",                    "4000 Mengafdeling",   True),
+    ("4200", "Geen werkstof",              "4000 Mengafdeling",   True),
+    ("5000", "QC",                         "5000 QC",             False),
+    ("5100", "Wachten keuring",            "5000 QC",             True),
+    ("5200", "Afkeur spoelsel",            "5000 QC",             True),
+    ("5300", "Afkeur werkstof",            "5000 QC",             True),
+]
+
+
+def seed_stilstand_redencodes(cur: Any) -> None:
+    cur.executemany(
+        "INSERT INTO stilstand_redencodes (code, label, categorie, is_subcode) VALUES (%s, %s, %s, %s)",
+        STILSTAND_REDENCODES_DEFAULT,
+    )
 
 
 def seed_default_users(cur: Any) -> None:

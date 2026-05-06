@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Stilstanden week {{ week }} · Mobacc{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Productie</div>
+    <h2>Stilstanden – week {{ week }}/{{ jaar }}</h2>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <a href="{{ url_for('stilstanden_dashboard', week=prev_week, jaar=prev_jaar) }}" class="btn-outline">← wk {{ prev_week }}</a>
+    <a href="{{ url_for('stilstanden_dashboard') }}" class="btn-outline">Huidige week</a>
+    <a href="{{ url_for('stilstanden_dashboard', week=next_week, jaar=next_jaar) }}" class="btn-outline">wk {{ next_week }} →</a>
+    <a href="{{ url_for('stilstanden_registreer') }}" class="btn">+ Stilstand registreren</a>
+    <a href="{{ url_for('stilstanden_importeer') }}" class="btn-outline">TME importeren</a>
+  </div>
+</div>
+
+<div class="stilstand-grid">
+  {% for lijn in [1, 2, 3, 4] %}
+  <div class="card stilstand-lijn-card">
+    <div class="stilstand-lijn-header">
+      <strong>Lijn {{ lijn }}</strong>
+      <span class="stilstand-total">{{ totalen.get(lijn, 0) }} min totaal</span>
+    </div>
+    {% set oorzaken = top3.get(lijn, []) %}
+    {% if oorzaken %}
+    <ol class="stilstand-top3">
+      {% for o in oorzaken %}
+      <li>
+        <span class="stilstand-code">{{ o.code }}</span>
+        <span class="stilstand-label">{{ o.label }}</span>
+        <span class="stilstand-min">{{ o.minuten }} min</span>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <p class="muted" style="margin:16px 0 0;">Geen stilstanden geregistreerd.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<style>
+.page-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+.stilstand-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
+.stilstand-lijn-card { padding:20px; }
+.stilstand-lijn-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.stilstand-lijn-header strong { font-size:1.05rem; }
+.stilstand-total { font-size:.8rem; color:var(--muted); }
+.stilstand-top3 { margin:0; padding:0; list-style:none; counter-reset:top3; }
+.stilstand-top3 li { counter-increment:top3; display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); }
+.stilstand-top3 li:last-child { border-bottom:none; }
+.stilstand-top3 li::before { content:counter(top3); min-width:20px; height:20px; background:var(--brand); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:700; flex-shrink:0; }
+.stilstand-code { font-size:.75rem; font-weight:700; color:var(--muted); flex-shrink:0; }
+.stilstand-label { flex:1; font-size:.88rem; }
+.stilstand-min { font-size:.8rem; font-weight:600; color:var(--brand); flex-shrink:0; }
+.btn { background:var(--brand); color:#fff; padding:8px 16px; border-radius:8px; font-size:.85rem; font-weight:600; text-decoration:none; white-space:nowrap; }
+.btn:hover { background:var(--brand-hover); color:#fff; text-decoration:none; }
+.btn-outline { border:1px solid var(--line); color:var(--ink); padding:8px 14px; border-radius:8px; font-size:.85rem; text-decoration:none; white-space:nowrap; }
+.btn-outline:hover { background:var(--surface-soft); text-decoration:none; }
+</style>
+{% endblock %}
